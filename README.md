@@ -114,7 +114,7 @@ What this does:
 
 Then close Codex fully and open it again.
 
-### 2. Install for Claude Code
+### 3. Install for Claude Code
 
 Paste this into Terminal, then press `Enter`:
 
@@ -131,6 +131,23 @@ What this does:
 - Cleans up the temporary download
 
 Then restart Claude Code.
+
+### 4. Install for Antigravity
+
+Paste this into Terminal, then press `Enter`:
+
+```bash
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-antigravity.sh && \
+rm -rf /tmp/UI-competitor-research
+```
+
+What this does:
+- Downloads the skill from GitHub
+- Copies the skill folder to `~/.antigravity/skills/`
+- Makes `competitor-research-to-figma` available as a skill in Antigravity
+
+Then restart Antigravity.
 
 ---
 
@@ -156,11 +173,20 @@ bash /tmp/UI-competitor-research/scripts/install-skill-claude.sh && \
 rm -rf /tmp/UI-competitor-research
 ```
 
+### Update in Antigravity
+
+```bash
+rm -rf ~/.antigravity/skills/competitor-research-to-figma && \
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-antigravity.sh && \
+rm -rf /tmp/UI-competitor-research
+```
+
 ---
 
 ## How to use it
 
-Open Codex and send a message like this:
+Open Codex, Claude Code, or Antigravity and send a message like this:
 
 ```
 Please run competitor-research-to-figma.
