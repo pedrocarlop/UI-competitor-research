@@ -1,12 +1,14 @@
 #!/bin/bash
 set -e
 
-SKILL_FILE=".claude/commands/competitor-research-to-figma.md"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SKILL_FILE="$REPO_ROOT/.claude/commands/competitor-research-to-figma.md"
 DEST_DIR="$HOME/.claude/commands"
 DEST="$DEST_DIR/competitor-research-to-figma.md"
 
 if [ ! -f "$SKILL_FILE" ]; then
-  echo "Error: run this script from the repository root."
+  echo "Error: skill file not found at $SKILL_FILE"
   exit 1
 fi
 

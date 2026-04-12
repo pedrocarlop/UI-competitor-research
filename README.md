@@ -97,18 +97,13 @@ On Mac:
 - Type `Terminal`
 - Press `Enter`
 
-### 2. Clone this repository
+### 2. Install for Codex
 
-```bash
-git clone https://github.com/pedrocarlop/codex-skill-template-private.git
-cd codex-skill-template-private
-```
-
-### 3. Install for Codex
+Paste this into Terminal, then press `Enter`:
 
 ```bash
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo pedrocarlop/codex-skill-template-private \
+  --repo pedrocarlop/UI-competitor-research \
   --path .agents/skills/competitor-research-to-figma
 ```
 
@@ -119,17 +114,21 @@ What this does:
 
 Then close Codex fully and open it again.
 
-### Install for Claude Code
+### 2. Install for Claude Code
 
-From the repository root, run:
+Paste this into Terminal, then press `Enter`:
 
 ```bash
-bash scripts/install-skill-claude.sh
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-claude.sh && \
+rm -rf /tmp/UI-competitor-research
 ```
 
 What this does:
+- Downloads the skill from GitHub
 - Copies the Claude skill file to `~/.claude/commands/`
 - Makes `/competitor-research-to-figma` available in Claude Code
+- Cleans up the temporary download
 
 Then restart Claude Code.
 
@@ -137,14 +136,14 @@ Then restart Claude Code.
 
 ## Update (uninstall and reinstall)
 
-Use these to pick up the latest version after pulling changes.
+Use these to pick up the latest version.
 
 ### Update in Codex
 
 ```bash
 rm -rf ~/.codex/skills/competitor-research-to-figma && \
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo pedrocarlop/codex-skill-template-private \
+  --repo pedrocarlop/UI-competitor-research \
   --path .agents/skills/competitor-research-to-figma
 ```
 
@@ -152,7 +151,9 @@ python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-githu
 
 ```bash
 rm -f ~/.claude/commands/competitor-research-to-figma.md && \
-bash scripts/install-skill-claude.sh
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-claude.sh && \
+rm -rf /tmp/UI-competitor-research
 ```
 
 ---
