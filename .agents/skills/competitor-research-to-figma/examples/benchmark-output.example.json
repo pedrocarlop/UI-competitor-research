@@ -1,0 +1,293 @@
+{
+  "run_id": "2026-04-12T10-30-00Z",
+  "run_directory": "runs/2026-04-12T10-30-00Z",
+  "started_at": "2026-04-12T10:30:00.000Z",
+  "updated_at": "2026-04-12T11:02:00.000Z",
+  "completed_at": "2026-04-12T11:02:00.000Z",
+  "input": {
+    "feature_description": "Reusable payment links for merchants with expiration, branding, and post-payment management.",
+    "figma_destination_url": "https://www.figma.com/design/EXAMPLEFILEKEY/Benchmark-Board?node-id=0-1",
+    "company_name": "Northstar Commerce",
+    "credential_registry_path": ".secrets/competitor-credentials.json",
+    "catalog_path": ".agents/skills/competitor-research-to-figma/examples/competitor-catalog.example.json"
+  },
+  "setup_validation": {
+    "ok": true,
+    "figma": {
+      "ok": true,
+      "verification_level": "verified",
+      "summary": "Figma setup was verified through the destination URL, API token, or both.",
+      "signals": [
+        "Detected FIGMA_ACCESS_TOKEN",
+        "Detected FIGMA_WRITE_COMMAND"
+      ],
+      "verified_with": [
+        "Validated figma_destination_url with file key EXAMPLEFILEKEY",
+        "Verified Figma token via /v1/me (researcher@example.com)"
+      ],
+      "instructions": []
+    },
+    "browser": {
+      "ok": true,
+      "verification_level": "verified",
+      "summary": "Browser automation was verified by launching or connecting to a browser.",
+      "signals": [
+        "Resolved playwright package"
+      ],
+      "verified_with": [
+        "Launched local Playwright browser and opened about:blank"
+      ],
+      "instructions": []
+    }
+  },
+  "discovered_competitors": [
+    {
+      "competitor_name": "Stripe",
+      "product_url": "https://stripe.com/payments/payment-links",
+      "login_url": "https://dashboard.stripe.com/login",
+      "reason_for_inclusion": "Strong fit for reusable merchant payment links and operational management.",
+      "confidence": "high",
+      "product_category": "payments",
+      "keyword_matches": [
+        "payment",
+        "branding",
+        "expiration"
+      ]
+    },
+    {
+      "competitor_name": "Square",
+      "product_url": "https://squareup.com/us/en/payments",
+      "login_url": "https://squareup.com/login",
+      "reason_for_inclusion": "Mature seller tooling with reusable checkout and payment collection journeys.",
+      "confidence": "high",
+      "product_category": "payments"
+    },
+    {
+      "competitor_name": "PayPal",
+      "product_url": "https://www.paypal.com/us/business/accept-payments/payment-links",
+      "login_url": "https://www.paypal.com/signin",
+      "reason_for_inclusion": "Widely used merchant payment link flow with post-payment management patterns.",
+      "confidence": "medium",
+      "product_category": "payments"
+    }
+  ],
+  "included_competitors": [
+    "Stripe",
+    "Square"
+  ],
+  "excluded_competitors": [
+    {
+      "competitor_name": "PayPal",
+      "reason": "No usable credentials were provided, so the competitor was excluded from live capture."
+    }
+  ],
+  "captures": [
+    {
+      "competitor_name": "Stripe",
+      "status": "captured",
+      "summary": "Stripe exposed a concise payment-link creation path with clear dashboard entry points and a management state after creation.",
+      "steps": [
+        {
+          "step_number": 1,
+          "step_label": "entry",
+          "screenshot_path": "runs/2026-04-12T10-30-00Z/stripe/01-entry.png",
+          "url": "https://dashboard.stripe.com/payment-links",
+          "change_note": "Arrived at the payment links dashboard entry page.",
+          "why_it_matters": "Shows the natural logged-in entry point for the feature.",
+          "visible_headings": [
+            "Payment links",
+            "Create payment link"
+          ],
+          "visible_text_snippets": [
+            "Payment links",
+            "Create payment link",
+            "Manage reusable links from one dashboard"
+          ]
+        },
+        {
+          "step_number": 2,
+          "step_label": "create-link-form",
+          "screenshot_path": "runs/2026-04-12T10-30-00Z/stripe/02-create-link-form.png",
+          "url": "https://dashboard.stripe.com/payment-links/create",
+          "change_note": "Opened the form to configure a new reusable link.",
+          "why_it_matters": "Shows the core configuration model and visible modules.",
+          "visible_headings": [
+            "Create payment link",
+            "Products"
+          ]
+        },
+        {
+          "step_number": 3,
+          "step_label": "management-state",
+          "screenshot_path": "runs/2026-04-12T10-30-00Z/stripe/03-management-state.png",
+          "url": "https://dashboard.stripe.com/payment-links/plink_test_123",
+          "change_note": "Viewed the post-creation management page for the link.",
+          "why_it_matters": "Shows operational follow-up options after creation.",
+          "visible_headings": [
+            "Payment link details",
+            "Active"
+          ]
+        }
+      ],
+      "analysis": {
+        "experience_summary": "Observed flow moved quickly from a dedicated feature entry into a structured creation form and then a management state.",
+        "step_reconstruction": [
+          "Opened the payment links entry surface.",
+          "Moved into a focused creation form.",
+          "Reached a management view after link creation."
+        ],
+        "visible_ui_elements": [
+          "Primary create button",
+          "Product selector",
+          "Status badge",
+          "Link details panel"
+        ],
+        "inferred_capabilities": [
+          "Reusable payment links",
+          "Post-creation status management"
+        ],
+        "interaction_patterns": [
+          "Dashboard entry into form workflow",
+          "Dedicated management screen after creation"
+        ],
+        "strengths": [
+          "Short path to creation",
+          "Clear post-creation management state"
+        ],
+        "friction_points": [
+          "Some configuration detail may require prior product setup"
+        ],
+        "reusable_ideas": [
+          "Dedicated feature landing state inside the dashboard",
+          "Immediate management page after successful creation"
+        ],
+        "caveats": [
+          "Observed only one mainline path with a research account"
+        ]
+      },
+      "warnings": [],
+      "navigation_hints_used": [
+        "payment links"
+      ]
+    },
+    {
+      "competitor_name": "Square",
+      "status": "partial",
+      "summary": "Square showed an operational entry point and a configuration step, but the run stopped before final confirmation because of a guarded state.",
+      "steps": [
+        {
+          "step_number": 1,
+          "step_label": "entry",
+          "screenshot_path": "runs/2026-04-12T10-30-00Z/square/01-entry.png",
+          "url": "https://squareup.com/dashboard",
+          "change_note": "Entered the seller dashboard after login.",
+          "why_it_matters": "Shows where the feature is discovered in the logged-in product.",
+          "visible_headings": [
+            "Dashboard",
+            "Online checkout"
+          ]
+        },
+        {
+          "step_number": 2,
+          "step_label": "payment-link-setup",
+          "screenshot_path": "runs/2026-04-12T10-30-00Z/square/02-payment-link-setup.png",
+          "url": "https://squareup.com/dashboard/online-checkout/payment-links",
+          "change_note": "Opened the payment-link setup flow.",
+          "why_it_matters": "Shows the available configuration model and surface framing.",
+          "visible_headings": [
+            "Payment links",
+            "Create link"
+          ]
+        }
+      ],
+      "analysis": {
+        "experience_summary": "Observed journey exposed the feature from a dashboard surface and then moved into a branded setup experience, but final confirmation was not captured.",
+        "step_reconstruction": [
+          "Entered the seller dashboard.",
+          "Opened the payment link setup surface."
+        ],
+        "visible_ui_elements": [
+          "Dashboard navigation",
+          "Create link button",
+          "Configuration card"
+        ],
+        "inferred_capabilities": [
+          "Reusable payment links",
+          "Dashboard-based feature discoverability"
+        ],
+        "interaction_patterns": [
+          "Feature discovery from seller dashboard",
+          "Guided setup flow"
+        ],
+        "strengths": [
+          "Feature discoverable from a central seller area"
+        ],
+        "friction_points": [
+          "Completion evidence is incomplete"
+        ],
+        "reusable_ideas": [
+          "Strong dashboard placement for feature entry"
+        ],
+        "caveats": [
+          "Final confirmation state was not observed"
+        ]
+      },
+      "warnings": [
+        "A guarded or ambiguous state prevented safe continuation."
+      ],
+      "navigation_hints_used": [
+        "online checkout",
+        "payment links"
+      ],
+      "resume_url": "https://squareup.com/dashboard/online-checkout/payment-links"
+    }
+  ],
+  "cross_competitor_findings": {
+    "recurring_capabilities": [
+      "Reusable payment links",
+      "Post-creation operational management"
+    ],
+    "recurring_patterns": [
+      "Logged-in dashboard entry into feature-specific setup",
+      "Dedicated management state after setup"
+    ],
+    "recurring_strengths": [
+      "Short time to reach the core feature",
+      "Clear operational framing once inside the feature"
+    ],
+    "recurring_friction_points": [
+      "Some evidence can be blocked by verification or guarded states"
+    ],
+    "coverage_summary": "2 of 3 shortlisted competitors were included in live capture."
+  },
+  "figma_export": {
+    "destination_url": "https://www.figma.com/design/EXAMPLEFILEKEY/Benchmark-Board?node-id=0-1",
+    "page_name": "Investigación",
+    "status": "planned",
+    "layout_plan_path": "runs/2026-04-12T10-30-00Z/figma-export-plan.json",
+    "asset_manifest_path": "runs/2026-04-12T10-30-00Z/figma-assets-manifest.json",
+    "html_board_path": "runs/2026-04-12T10-30-00Z/figma-board.html",
+    "capture_payload_path": "runs/2026-04-12T10-30-00Z/figma-capture-payload.json",
+    "write_payload_path": "runs/2026-04-12T10-30-00Z/figma-write-payload.json",
+    "notes": [
+      "Figma export plan generated successfully.",
+      "Figma asset manifest generated successfully.",
+      "Figma write payload generated successfully.",
+      "HTML board bundle generated successfully from the reusable research template.",
+      "Figma capture payload generated successfully.",
+      "Use FIGMA_CAPTURE_COMMAND with figma-capture-payload.json to capture the generated HTML board into the destination file.",
+      "Use Codex Figma tooling or FIGMA_WRITE_COMMAND with figma-write-payload.json only as a fallback when HTML capture is unavailable."
+    ]
+  },
+  "warnings": [
+    "PayPal was excluded because no credentials were provided."
+  ],
+  "manual_intervention_checkpoints": [
+    {
+      "competitor_name": "Square",
+      "reason": "The flow reached a guarded state that required manual confirmation before proceeding.",
+      "url": "https://squareup.com/dashboard/online-checkout/payment-links",
+      "created_at": "2026-04-12T10:52:00.000Z"
+    }
+  ]
+}

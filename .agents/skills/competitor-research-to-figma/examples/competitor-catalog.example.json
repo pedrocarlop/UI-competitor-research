@@ -1,0 +1,31 @@
+{
+  "competitors": [
+    {
+      "competitor_name": "Stripe",
+      "product_url": "https://stripe.com/payments/payment-links",
+      "login_url": "https://dashboard.stripe.com/login",
+      "product_category": "payments",
+      "keywords": ["payment", "link", "merchant", "checkout", "branding", "dashboard", "reusable", "expiration"],
+      "base_reason": "Strong fit for merchant payment-link creation, branding controls, and operational management.",
+      "default_confidence": "high"
+    },
+    {
+      "competitor_name": "Square",
+      "product_url": "https://squareup.com/us/en/payments",
+      "login_url": "https://app.squareup.com/login?return_to=%2Fdashboard%2Fpayment-links",
+      "start_url": "https://app.squareup.com/dashboard/payment-links",
+      "product_category": "payments",
+      "keywords": ["payment", "link", "seller", "checkout", "dashboard", "manage"],
+      "base_reason": "Mature seller tooling with a dashboard-first payment-link management flow.",
+      "default_confidence": "high",
+      "locale_variants": [
+        {
+          "locale": "es-ES",
+          "product_url": "https://squareup.com/es/es/payment-links",
+          "login_url": "https://app.squareup.com/login?return_to=%2Fdashboard%2Fpayment-links",
+          "start_url": "https://app.squareup.com/dashboard/payment-links"
+        }
+      ]
+    }
+  ]
+}

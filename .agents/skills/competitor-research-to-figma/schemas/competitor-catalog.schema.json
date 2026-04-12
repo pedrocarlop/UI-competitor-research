@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/competitor-catalog.schema.json",
+  "title": "CompetitorCatalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["competitors"],
+  "properties": {
+    "competitors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "competitor_name",
+          "product_url",
+          "login_url",
+          "product_category",
+          "keywords",
+          "base_reason",
+          "default_confidence"
+        ],
+        "properties": {
+          "competitor_name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "product_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "login_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "start_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "product_category": {
+            "type": "string",
+            "minLength": 1
+          },
+          "keywords": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "base_reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default_confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "locale_variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["locale"],
+              "properties": {
+                "locale": {
+                  "type": "string",
+                  "minLength": 2
+                },
+                "product_url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "login_url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "start_url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

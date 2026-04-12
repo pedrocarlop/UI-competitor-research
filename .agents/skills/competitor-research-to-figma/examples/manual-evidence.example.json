@@ -1,0 +1,30 @@
+{
+  "competitors": [
+    {
+      "competitor_name": "Square",
+      "status": "captured",
+      "summary": "Imported manual evidence covering payment-link management and creation entry points.",
+      "warnings": [
+        "Identity verification remained visible as a banner, so the run stopped before any publish action."
+      ],
+      "steps": [
+        {
+          "step_label": "payment-links-dashboard",
+          "screenshot_path": "./artifacts/square/01-payment-links-dashboard.png",
+          "url": "https://app.squareup.com/dashboard/payment-links",
+          "change_note": "Opened the payment-links management list with existing links and operational actions visible.",
+          "why_it_matters": "Shows Square's primary management surface for payment links.",
+          "visible_headings": ["Payment links", "Recent sales"],
+          "visible_text_snippets": ["Create payment link", "Share", "Activate"]
+        },
+        {
+          "step_label": "payment-link-create-entry",
+          "screenshot_path": "./artifacts/square/02-payment-link-create-entry.png",
+          "url": "https://app.squareup.com/dashboard/payment-links/new",
+          "change_note": "Opened the create-payment-link flow entry after navigating from the management surface.",
+          "why_it_matters": "Shows how Square frames payment-link creation after merchants are already in the dashboard."
+        }
+      ]
+    }
+  ]
+}
