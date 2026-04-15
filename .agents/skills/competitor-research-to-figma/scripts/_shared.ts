@@ -55,7 +55,7 @@ export interface SetupValidationResult {
 
 export interface ResearchInput {
   feature_description: string;
-  figma_destination_url: string;
+  figma_destination_url?: string;
   company_name?: string;
   credential_registry_path?: string;
   catalog_path?: string;
@@ -109,6 +109,9 @@ export interface CompetitorAnalysis {
   friction_points: string[];
   reusable_ideas: string[];
   caveats: string[];
+  design_patterns?: string[];
+  information_architecture?: string[];
+  unique_differentiators?: string[];
 }
 
 export interface CompetitorCapture {
@@ -120,6 +123,8 @@ export interface CompetitorCapture {
   warnings: string[];
   navigation_hints_used?: string[];
   resume_url?: string;
+  sentiment?: CompetitorSentiment;
+  pricing?: CompetitorPricing;
 }
 
 export interface CrossCompetitorFindings {
@@ -128,6 +133,8 @@ export interface CrossCompetitorFindings {
   recurring_strengths: string[];
   recurring_friction_points: string[];
   coverage_summary: string;
+  feature_matrix?: FeatureMatrix;
+  sentiment_themes?: string[];
 }
 
 export interface FigmaLayoutStep {
@@ -203,7 +210,8 @@ export interface ResearchRun {
   excluded_competitors: ExcludedCompetitor[];
   captures: CompetitorCapture[];
   cross_competitor_findings: CrossCompetitorFindings;
-  figma_export: FigmaExportMetadata;
+  figma_export?: FigmaExportMetadata;
+  market_context?: MarketContext;
   warnings: string[];
   manual_intervention_checkpoints: ManualInterventionCheckpoint[];
 }
@@ -256,6 +264,85 @@ export interface ImportedEvidenceResult {
   captures: CompetitorCapture[];
   warnings: string[];
   covered_competitors: string[];
+}
+
+// --- Customer sentiment types ---
+
+export type SentimentDirection = "positive" | "negative" | "mixed" | "neutral";
+export type SentimentSourceType = "app_store" | "review_platform" | "reddit" | "forum" | "social" | "other";
+
+export interface SentimentEntry {
+  source_url: string;
+  source_type: SentimentSourceType;
+  source_name: string;
+  date?: string;
+  sentiment: SentimentDirection;
+  quote_or_paraphrase: string;
+  theme: string;
+}
+
+export interface CompetitorSentiment {
+  competitor_name: string;
+  overall_direction: SentimentDirection;
+  rating?: { score: number; max: number; source: string };
+  review_count?: number;
+  top_praised: string[];
+  top_criticized: string[];
+  notable_quotes: string[];
+  entries: SentimentEntry[];
+}
+
+// --- Pricing types ---
+
+export interface PricingTier {
+  tier_name: string;
+  price?: string;
+  billing_frequency?: string;
+  key_features: string[];
+  limitations?: string[];
+}
+
+export interface CompetitorPricing {
+  competitor_name: string;
+  pricing_model: string;
+  currency?: string;
+  tiers: PricingTier[];
+  free_tier?: PricingTier;
+  enterprise_available: boolean;
+  pricing_page_url?: string;
+  screenshot_path?: string;
+  notes: string[];
+  confidence: ConfidenceLevel;
+}
+
+// --- Feature matrix types ---
+
+export type FeatureSupport = "supported" | "partial" | "not_supported" | "unknown";
+
+export interface SubfeatureEntry {
+  subfeature_name: string;
+  description: string;
+  support_by_competitor: Record<string, FeatureSupport>;
+  best_implementation?: string;
+  notes?: string;
+}
+
+export interface FeatureMatrix {
+  feature_name: string;
+  subfeatures: SubfeatureEntry[];
+  table_stakes: string[];
+  differentiators: string[];
+}
+
+// --- Market context types ---
+
+export interface MarketContext {
+  domain: string;
+  market_segments: string[];
+  key_trends: string[];
+  recent_events: string[];
+  regulatory_notes?: string[];
+  sources: Array<{ title: string; url: string }>;
 }
 
 export function parseArgs(argv: string[]): Record<string, string> {
@@ -343,9 +430,6 @@ export function validateMandatoryInputs(input: Partial<ResearchInput>): string[]
   const missing: string[] = [];
   if (!isNonEmptyString(input.feature_description)) {
     missing.push("feature_description");
-  }
-  if (!isNonEmptyString(input.figma_destination_url)) {
-    missing.push("figma_destination_url");
   }
   return missing;
 }
@@ -479,7 +563,7 @@ export function assertSafeToProceed(input: Partial<ResearchInput>): void {
   const missing = validateMandatoryInputs(input);
   if (missing.length > 0) {
     throw new Error(
-      `Missing mandatory input: ${missing.join(", ")}.\nProvide feature_description and figma_destination_url before running setup validation, discovery, capture, or export.`,
+      `Missing mandatory input: ${missing.join(", ")}.\nProvide feature_description before running setup validation, discovery, capture, or export.`,
     );
   }
 }
@@ -521,7 +605,7 @@ export function defaultFigmaExport(destinationUrl: string, runDirectory: string)
 export function buildStoredResearchInput(input: ResearchInput): ResearchInput {
   return {
     feature_description: input.feature_description,
-    figma_destination_url: input.figma_destination_url,
+    ...(input.figma_destination_url ? { figma_destination_url: input.figma_destination_url } : {}),
     ...(input.company_name ? { company_name: input.company_name } : {}),
     ...(input.credential_registry_path ? { credential_registry_path: input.credential_registry_path } : {}),
     ...(input.catalog_path ? { catalog_path: input.catalog_path } : {}),

@@ -1,8 +1,8 @@
 # competitor-research
 
-A skill for Codex, Claude Code, and Antigravity that researches how competitors implement a feature using public evidence — websites, pricing pages, help centers, changelogs, app store listings, videos, reviews, and forums — and produces a structured markdown dossier with screenshots, links, and sourced findings.
+A competitive intelligence skill for Codex, Claude Code, and Antigravity. Describe a feature domain and the skill produces a comprehensive research dossier — competitor profiles, subfeature matrices, pricing comparisons, customer sentiment analysis, task flows with screenshots, and actionable recommendations.
 
-You describe the feature you want to benchmark. The skill finds competitors, collects evidence from public sources, captures screenshots, and synthesizes everything into a markdown report your team can review immediately.
+You say "I want to become an expert on payment links" and the skill delivers a full report covering the competitive landscape: who the players are, what they offer, how they price it, what customers love and hate, and where the opportunities are.
 
 ---
 
@@ -33,46 +33,67 @@ A well-executed public-source audit often produces more actionable insight than 
 
 ```
 You describe the feature
-you want to benchmark
+you want to understand
           |
           v
 +-----------------------------+
-|  Define research question   |
-|  and scope                  |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  Identify competitors       |
-|  5–10 relevant products     |
+|  1. Define research question|
 +-----------------------------+
           |
           v
 +-----------------------------+
-|  Build source map           |
-|  For each competitor, map   |
-|  public sources to visit    |
+|  2. Market landscape        |
+|  Industry context & trends  |
 +-----------------------------+
           |
           v
 +-----------------------------+
-|  Collect evidence           |
-|  Visit sources, capture     |
-|  screenshots, record links  |
+|  3. Discover competitors    |
+|  5-10 via web search        |
 +-----------------------------+
           |
           v
 +-----------------------------+
-|  Analyze and synthesize     |
-|  Reconstruct flows and      |
-|  patterns from evidence     |
+|  4. Build source map        |
 +-----------------------------+
           |
           v
 +-----------------------------+
-|  Produce markdown report    |
-|  research.md + assets/      |
-|  with sourced findings      |
+|  5. Feature matrix          |
+|  Subfeature comparison      |
++-----------------------------+
+          |
+          v
++-----------------------------+
+|  6. Collect evidence        |
+|  Screenshots & flows        |
++-----------------------------+
+          |
+          v
++-----------------------------+
+|  7. Pricing analysis        |
++-----------------------------+
+          |
+          v
++-----------------------------+
+|  8. Customer sentiment      |
+|  Reviews, Reddit, forums    |
++-----------------------------+
+          |
+          v
++-----------------------------+
+|  9. Analyze & synthesize    |
++-----------------------------+
+          |
+          v
++-----------------------------+
+| 10. Produce research.md     |
+|  + assets/ + sources.md     |
++-----------------------------+
+          |
+          v
++-----------------------------+
+| 11. Optional: Figma export  |
 +-----------------------------+
 ```
 
@@ -96,18 +117,21 @@ output/
 
 The markdown report includes:
 
-- Research goal and scope
-- Competitors covered
-- Methodology
-- Per-competitor summaries with source-backed evidence
-- Feature or pattern comparison
-- Reconstructed flows from public evidence
-- Key findings (with observation, inference, and confidence levels)
-- Unknowns and gaps
-- Design implications
-- Source index
+1. **Executive summary** — 3-5 key takeaways
+2. **Market landscape** — industry context, segments, trends
+3. **Research goal and scope**
+4. **Competitors covered** — with confidence levels
+5. **Methodology**
+6. **Feature matrix** — subfeature comparison table
+7. **Per-competitor deep dives** — positioning, screenshots, task flows, pricing, strengths, weaknesses, customer sentiment
+8. **Pricing comparison** — cross-competitor pricing analysis
+9. **Customer sentiment analysis** — themes, quotes, ratings from reviews and forums
+10. **Cross-competitor patterns and findings** — with observation, inference, and confidence levels
+11. **Opportunities and recommendations** — actionable insights for the PO/designer
+12. **Unknowns and gaps**
+13. **Source index**
 
-No Figma export is required. The output is self-contained markdown that works in any review workflow.
+No Figma export is required. The output is self-contained markdown that works in any review workflow. Figma export is available as an optional add-on.
 
 ---
 
@@ -270,6 +294,9 @@ See more examples in the [example prompts](/.agents/skills/competitor-research/e
 
 ## Example prompts
 
+**Become a domain expert:**
+> I want to become an expert on payment links. How do competitors handle creation, management, sharing, pricing, and what do customers love or hate?
+
 **Broad competitive audit:**
 > Research how top project management tools handle recurring task automation. Focus on Asana, Monday.com, ClickUp, and Notion.
 
@@ -279,11 +306,14 @@ See more examples in the [example prompts](/.agents/skills/competitor-research/e
 **Feature-specific deep dive:**
 > How do Stripe, Square, and PayPal present payment link creation to merchants? Gather evidence from their feature pages, help centers, and any public demos.
 
+**Customer sentiment analysis:**
+> What do customers love and hate about project management tools for remote teams? Focus on reviews from G2, Reddit, and app stores for Asana, Monday.com, ClickUp, Linear, and Notion.
+
+**Non-payments domain — analytics:**
+> Compare how analytics platforms handle custom event tracking and funnel analysis.
+
 **Help center and documentation audit:**
 > Compare how Intercom, Zendesk, and Freshdesk document their chatbot setup process. Focus on help center articles and any public video walkthroughs.
-
-**App store and review analysis:**
-> Analyze the app store presence of Notion, Coda, and Airtable. Capture store screenshots, recent reviews, and ratings across iOS and Android.
 
 ---
 

@@ -16,7 +16,6 @@
     "excluded_competitors",
     "captures",
     "cross_competitor_findings",
-    "figma_export",
     "warnings",
     "manual_intervention_checkpoints"
   ],
@@ -42,7 +41,7 @@
     "input": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["feature_description", "figma_destination_url"],
+      "required": ["feature_description"],
       "properties": {
         "feature_description": {
           "type": "string"
@@ -123,6 +122,9 @@
     },
     "figma_export": {
       "$ref": "#/$defs/figmaExport"
+    },
+    "market_context": {
+      "$ref": "#/$defs/marketContext"
     },
     "warnings": {
       "type": "array",
@@ -282,6 +284,12 @@
         },
         "resume_url": {
           "type": "string"
+        },
+        "sentiment": {
+          "$ref": "#/$defs/competitorSentiment"
+        },
+        "pricing": {
+          "$ref": "#/$defs/competitorPricing"
         }
       }
     },
@@ -395,6 +403,24 @@
           "items": {
             "type": "string"
           }
+        },
+        "design_patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "information_architecture": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unique_differentiators": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -435,6 +461,15 @@
         },
         "coverage_summary": {
           "type": "string"
+        },
+        "feature_matrix": {
+          "$ref": "#/$defs/featureMatrix"
+        },
+        "sentiment_themes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -504,6 +539,100 @@
           "type": "string",
           "format": "date-time"
         }
+      }
+    },
+    "competitorSentiment": {
+      "type": "object",
+      "required": ["competitor_name", "overall_direction", "top_praised", "top_criticized", "notable_quotes", "entries"],
+      "properties": {
+        "competitor_name": { "type": "string" },
+        "overall_direction": { "type": "string", "enum": ["positive", "negative", "mixed", "neutral"] },
+        "rating": {
+          "type": "object",
+          "properties": {
+            "score": { "type": "number" },
+            "max": { "type": "number" },
+            "source": { "type": "string" }
+          }
+        },
+        "review_count": { "type": "integer" },
+        "top_praised": { "type": "array", "items": { "type": "string" } },
+        "top_criticized": { "type": "array", "items": { "type": "string" } },
+        "notable_quotes": { "type": "array", "items": { "type": "string" } },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/sentimentEntry" } }
+      }
+    },
+    "sentimentEntry": {
+      "type": "object",
+      "required": ["source_url", "source_type", "source_name", "sentiment", "quote_or_paraphrase", "theme"],
+      "properties": {
+        "source_url": { "type": "string" },
+        "source_type": { "type": "string", "enum": ["app_store", "review_platform", "reddit", "forum", "social", "other"] },
+        "source_name": { "type": "string" },
+        "date": { "type": "string" },
+        "sentiment": { "type": "string", "enum": ["positive", "negative", "mixed", "neutral"] },
+        "quote_or_paraphrase": { "type": "string" },
+        "theme": { "type": "string" }
+      }
+    },
+    "competitorPricing": {
+      "type": "object",
+      "required": ["competitor_name", "pricing_model", "tiers", "enterprise_available", "notes", "confidence"],
+      "properties": {
+        "competitor_name": { "type": "string" },
+        "pricing_model": { "type": "string" },
+        "currency": { "type": "string" },
+        "tiers": { "type": "array", "items": { "$ref": "#/$defs/pricingTier" } },
+        "free_tier": { "$ref": "#/$defs/pricingTier" },
+        "enterprise_available": { "type": "boolean" },
+        "pricing_page_url": { "type": "string" },
+        "screenshot_path": { "type": "string" },
+        "notes": { "type": "array", "items": { "type": "string" } },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "pricingTier": {
+      "type": "object",
+      "required": ["tier_name", "key_features"],
+      "properties": {
+        "tier_name": { "type": "string" },
+        "price": { "type": "string" },
+        "billing_frequency": { "type": "string" },
+        "key_features": { "type": "array", "items": { "type": "string" } },
+        "limitations": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "featureMatrix": {
+      "type": "object",
+      "required": ["feature_name", "subfeatures", "table_stakes", "differentiators"],
+      "properties": {
+        "feature_name": { "type": "string" },
+        "subfeatures": { "type": "array", "items": { "$ref": "#/$defs/subfeatureEntry" } },
+        "table_stakes": { "type": "array", "items": { "type": "string" } },
+        "differentiators": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "subfeatureEntry": {
+      "type": "object",
+      "required": ["subfeature_name", "description", "support_by_competitor"],
+      "properties": {
+        "subfeature_name": { "type": "string" },
+        "description": { "type": "string" },
+        "support_by_competitor": { "type": "object", "additionalProperties": { "type": "string", "enum": ["supported", "partial", "not_supported", "unknown"] } },
+        "best_implementation": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "marketContext": {
+      "type": "object",
+      "required": ["domain", "market_segments", "key_trends", "recent_events", "sources"],
+      "properties": {
+        "domain": { "type": "string" },
+        "market_segments": { "type": "array", "items": { "type": "string" } },
+        "key_trends": { "type": "array", "items": { "type": "string" } },
+        "recent_events": { "type": "array", "items": { "type": "string" } },
+        "regulatory_notes": { "type": "array", "items": { "type": "string" } },
+        "sources": { "type": "array", "items": { "type": "object", "properties": { "title": { "type": "string" }, "url": { "type": "string" } } } }
       }
     }
   }

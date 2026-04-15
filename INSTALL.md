@@ -77,7 +77,7 @@ Keep credential files outside version control. Never commit real passwords.
 Please run competitor-research.
 
 research_question:
-How do competitors handle payment link creation, management, and sharing?
+I want to become an expert on payment links — how do competitors handle creation, management, sharing, and what do customers say about them?
 
 company_name:
 Northstar Commerce

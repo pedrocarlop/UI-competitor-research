@@ -22,7 +22,7 @@ import {
 
 interface EvidenceIngestRequest {
   feature_description: string;
-  figma_destination_url: string;
+  figma_destination_url?: string;
   evidence_import_path: string;
   discovered_competitors: DiscoveredCompetitor[];
   run_directory: string;

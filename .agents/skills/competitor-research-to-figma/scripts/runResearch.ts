@@ -5,6 +5,7 @@ import { captureDiscoveredCompetitors } from "./captureCompetitorFlows.js";
 import { runSetupValidation } from "./checkSetup.js";
 import { discoverCompetitors } from "./discoverCompetitors.js";
 import { exportResearchToFigma } from "./exportResearchToFigma.js";
+import { generateMarkdownReport } from "./generateReport.js";
 import { ingestCapturedEvidence } from "./ingestCapturedEvidence.js";
 import {
   CaptureExecutionResult,
@@ -81,7 +82,7 @@ function buildStoredInput(request: RunResearchRequest): ResearchRun["input"] {
   const credentialRegistryPath = resolveCredentialRegistryPath(request);
   return buildStoredResearchInput({
     feature_description: request.feature_description,
-    figma_destination_url: request.figma_destination_url,
+    ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
     ...(request.company_name ? { company_name: request.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
     ...(request.catalog_path ? { catalog_path: request.catalog_path } : {}),
@@ -101,7 +102,7 @@ export async function runResearch(request: RunResearchRequest): Promise<Research
 
   const setup = await runSetupValidation(request.figma_destination_url);
   if (!setup.ok) {
-    throw new Error("Setup validation failed. Run checkSetup.ts and resolve missing Figma or browser tooling before research.");
+    console.warn("Setup validation warning: some tooling is unavailable. The skill will proceed with available tools.");
   }
 
   const { runId, runDirectory } = createRunDirectory(process.cwd(), request.run_id);
@@ -123,7 +124,9 @@ export async function runResearch(request: RunResearchRequest): Promise<Research
     excluded_competitors: [],
     captures: [],
     cross_competitor_findings: emptyCrossFindings(),
-    figma_export: defaultFigmaExport(request.figma_destination_url, runDirectory),
+    ...(request.figma_destination_url
+      ? { figma_export: defaultFigmaExport(request.figma_destination_url, runDirectory) }
+      : {}),
     warnings: [],
     manual_intervention_checkpoints: [],
   };
@@ -148,7 +151,7 @@ export async function runResearch(request: RunResearchRequest): Promise<Research
 
   const liveCaptureRequest: CaptureRequest = {
     feature_description: request.feature_description,
-    figma_destination_url: request.figma_destination_url,
+    ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
     discovered_competitors: remainingCompetitors,
     ...(request.company_name ? { company_name: request.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
@@ -182,8 +185,14 @@ export async function runResearch(request: RunResearchRequest): Promise<Research
   run = analyzeRun(run);
   writeRun(run);
 
-  run = exportResearchToFigma(run);
-  writeRun(run);
+  const reportPath = generateMarkdownReport(run);
+  logSection("Report Generated");
+  console.log(`Markdown report written to: ${reportPath}`);
+
+  if (request.figma_destination_url) {
+    run = exportResearchToFigma(run);
+    writeRun(run);
+  }
 
   return run;
 }
@@ -198,7 +207,7 @@ async function main(): Promise<void> {
   logSection("Research Run Completed");
   console.log(`Run directory: ${run.run_directory}`);
   console.log(`Captured competitors: ${run.included_competitors.join(", ") || "none"}`);
-  console.log(`Figma export status: ${run.figma_export.status}`);
+  console.log(`Figma export status: ${run.figma_export?.status ?? "skipped"}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

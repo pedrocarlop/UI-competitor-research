@@ -7,10 +7,15 @@ The installable skill lives in `.agents/skills/competitor-research-to-figma/` (l
 ## Principles
 
 - Default to public-evidence-first research. Do not treat login as the starting point.
-- Produce markdown reports with screenshots, links, and structured findings.
+- Produce comprehensive markdown reports with screenshots, links, and structured findings.
 - Every finding must distinguish observed facts, inferences, and unknowns.
 - Capture screenshots systematically with consistent naming and source attribution.
 - Credentials are optional and only used when explicitly requested by the user.
+- Customer sentiment must always cite sources (review platform, date, direct quote vs paraphrase).
+- Pricing analysis must distinguish public pricing from gated/sales-only pricing.
+- Feature matrix claims must be backed by evidence — do not infer support from marketing copy alone.
+- Market context claims must cite sources and note publication dates.
+- Figma export is optional — the skill must work without it.
 
 ## When extending the repository
 
@@ -18,3 +23,5 @@ The installable skill lives in `.agents/skills/competitor-research-to-figma/` (l
 - Keep the output contract stable: `output/research.md` + `output/assets/`.
 - Do not reintroduce credential gates or login-first workflows as defaults.
 - Update examples alongside any methodology or output format change.
+- Keep SKILL.md and `.claude/commands/competitor-research-to-figma.md` in sync — they must be identical.
+- Ensure changes work across all three platforms: Claude Code, Codex, and Antigravity.

@@ -16,6 +16,7 @@
     "ingest:evidence": "tsx .agents/skills/competitor-research-to-figma/scripts/ingestCapturedEvidence.ts",
     "analyze": "tsx .agents/skills/competitor-research-to-figma/scripts/analyzeCapturedFlows.ts",
     "export:figma": "tsx .agents/skills/competitor-research-to-figma/scripts/exportResearchToFigma.ts",
+    "generate:report": "tsx .agents/skills/competitor-research-to-figma/scripts/generateReport.ts",
     "run:research": "tsx .agents/skills/competitor-research-to-figma/scripts/runResearch.ts"
   },
   "dependencies": {

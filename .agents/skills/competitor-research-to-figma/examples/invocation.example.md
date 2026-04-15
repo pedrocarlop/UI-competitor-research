@@ -1,5 +1,25 @@
 # Example Invocations
 
+## Become an expert on a feature domain
+
+```text
+Please run competitor-research.
+
+research_question:
+I want to become an expert on payment links — how do competitors handle creation, management, sharing, pricing, and what do customers love or hate about them?
+
+company_name:
+Northstar Commerce
+```
+
+Expected behavior:
+- Gathers market landscape context for the payment links space
+- Discovers 5-10 relevant competitors automatically via web search
+- Builds a subfeature matrix (branding, expiration, analytics, multi-currency, etc.)
+- Captures pricing pages and compares pricing models
+- Gathers customer sentiment from G2, App Store, Reddit
+- Produces a comprehensive `output/research.md` with all sections
+
 ## Basic usage — broad competitive audit
 
 ```text
@@ -13,9 +33,42 @@ Acme Project Tools
 ```
 
 Expected behavior:
-- Discovers 5–10 relevant competitors automatically
+- Discovers 5-10 relevant competitors automatically
 - Gathers evidence from feature pages, help centers, pricing pages, and app stores
 - Produces `output/research.md` with findings and `output/assets/` with screenshots
+
+## Non-payments domain — design tools
+
+```text
+Please run competitor-research.
+
+research_question:
+How do design tools handle component libraries and design system management?
+
+competitors:
+["Figma", "Sketch", "Framer", "Penpot"]
+```
+
+Expected behavior:
+- Uses the provided competitor list directly
+- Identifies subfeatures: component variants, auto-layout, token management, versioning, publishing
+- Builds a feature matrix comparing support across competitors
+- Captures help center documentation on component management workflows
+
+## Non-payments domain — analytics
+
+```text
+Please run competitor-research.
+
+research_question:
+Compare how analytics platforms handle custom event tracking and funnel analysis.
+```
+
+Expected behavior:
+- Discovers analytics competitors via web search (Mixpanel, Amplitude, PostHog, etc.)
+- Compares event tracking setup flows and funnel builders
+- Captures pricing models (usage-based vs seat-based patterns common in analytics)
+- Gathers customer sentiment on ease of implementation
 
 ## Targeted competitors — specific list
 
@@ -52,6 +105,28 @@ Expected behavior:
 - Narrow scope — focuses only on pricing pages
 - Captures full-page screenshots of each competitor's pricing page
 - Compares tier structure, naming conventions, and free-tier positioning
+- Classifies pricing models and produces a comparison table
+
+## Customer sentiment focus
+
+```text
+Please run competitor-research.
+
+research_question:
+What do customers love and hate about project management tools for remote teams?
+
+competitors:
+["Asana", "Monday.com", "ClickUp", "Linear", "Notion"]
+
+scope:
+Focus on customer reviews and sentiment. Check G2, Capterra, Reddit, and app stores.
+```
+
+Expected behavior:
+- Prioritizes review platforms, forums, and app store reviews
+- Produces per-competitor sentiment summaries with quotes
+- Identifies recurring themes across all competitors
+- Highlights unmet needs and feature requests
 
 ## Help center and documentation audit
 
@@ -73,26 +148,6 @@ Expected behavior:
 - Reconstructs the chatbot setup flow from documentation evidence
 - Notes gaps where documentation is incomplete
 
-## App store and review analysis
-
-```text
-Please run competitor-research.
-
-research_question:
-Analyze app store presence, ratings, and recent user feedback for productivity tools.
-
-competitors:
-["Notion", "Coda", "Airtable"]
-
-scope:
-iOS App Store and Google Play Store pages, recent reviews, and ratings.
-```
-
-Expected behavior:
-- Captures app store page screenshots
-- Records ratings and recent review themes
-- Compares store presence and user sentiment
-
 ## Feature deep dive
 
 ```text
@@ -110,6 +165,26 @@ Expected behavior:
 - Reconstructs the payment link creation flow from public evidence
 - Captures screenshots of feature pages, help center articles, and demo videos
 - Clearly labels what was observed vs. inferred
+
+## With optional Figma export
+
+```text
+Please run competitor-research.
+
+research_question:
+How do e-commerce platforms handle product catalog management?
+
+figma_destination_url:
+https://www.figma.com/design/abc123/Research-Board
+
+competitors:
+["Shopify", "WooCommerce", "BigCommerce", "Squarespace"]
+```
+
+Expected behavior:
+- Runs the full research workflow
+- Produces `output/research.md` as always
+- Additionally exports a visual research board to the specified Figma file
 
 ## With authenticated research (optional)
 

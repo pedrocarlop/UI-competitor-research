@@ -6,25 +6,38 @@
   "completed_at": "2026-04-12T11:02:00.000Z",
   "input": {
     "feature_description": "Reusable payment links for merchants with expiration, branding, and post-payment management.",
-    "figma_destination_url": "https://www.figma.com/design/EXAMPLEFILEKEY/Benchmark-Board?node-id=0-1",
-    "company_name": "Northstar Commerce",
-    "credential_registry_path": ".secrets/competitor-credentials.json",
-    "catalog_path": ".agents/skills/competitor-research-to-figma/examples/competitor-catalog.example.json"
+    "company_name": "Northstar Commerce"
+  },
+  "market_context": {
+    "domain": "Payment links and hosted checkout",
+    "market_segments": [
+      "SMB merchants",
+      "Enterprise e-commerce",
+      "Creator economy and invoicing"
+    ],
+    "key_trends": [
+      "Shift toward no-code payment collection",
+      "Embedded finance and BaaS adoption",
+      "QR code payments gaining traction post-pandemic",
+      "Subscription and recurring payment link patterns emerging"
+    ],
+    "recent_events": [
+      "Stripe launched updated Payment Links with AI-assisted product descriptions (Q1 2026)",
+      "Square rebranded checkout links under unified seller dashboard"
+    ],
+    "sources": [
+      { "title": "Payment Links Market Overview 2026 — Fintech Weekly", "url": "https://example.com/fintech-weekly-payment-links-2026" },
+      { "title": "G2 Grid for Payment Processing", "url": "https://example.com/g2-grid-payment-processing" }
+    ]
   },
   "setup_validation": {
     "ok": true,
     "figma": {
-      "ok": true,
-      "verification_level": "verified",
-      "summary": "Figma setup was verified through the destination URL, API token, or both.",
-      "signals": [
-        "Detected FIGMA_ACCESS_TOKEN",
-        "Detected FIGMA_WRITE_COMMAND"
-      ],
-      "verified_with": [
-        "Validated figma_destination_url with file key EXAMPLEFILEKEY",
-        "Verified Figma token via /v1/me (researcher@example.com)"
-      ],
+      "ok": false,
+      "verification_level": "skipped",
+      "summary": "No Figma destination URL provided. Figma export will be skipped.",
+      "signals": [],
+      "verified_with": [],
       "instructions": []
     },
     "browser": {
@@ -44,8 +57,7 @@
     {
       "competitor_name": "Stripe",
       "product_url": "https://stripe.com/payments/payment-links",
-      "login_url": "https://dashboard.stripe.com/login",
-      "reason_for_inclusion": "Strong fit for reusable merchant payment links and operational management.",
+      "reason_for_inclusion": "Market leader in developer-first payment links with extensive documentation and public evidence.",
       "confidence": "high",
       "product_category": "payments",
       "keyword_matches": [
@@ -56,114 +68,191 @@
     },
     {
       "competitor_name": "Square",
-      "product_url": "https://squareup.com/us/en/payments",
-      "login_url": "https://squareup.com/login",
-      "reason_for_inclusion": "Mature seller tooling with reusable checkout and payment collection journeys.",
+      "product_url": "https://squareup.com/us/en/online-checkout",
+      "reason_for_inclusion": "Mature seller tooling with checkout links targeting SMB merchants.",
       "confidence": "high",
       "product_category": "payments"
     },
     {
       "competitor_name": "PayPal",
       "product_url": "https://www.paypal.com/us/business/accept-payments/payment-links",
-      "login_url": "https://www.paypal.com/signin",
-      "reason_for_inclusion": "Widely used merchant payment link flow with post-payment management patterns.",
-      "confidence": "medium",
+      "reason_for_inclusion": "Widely recognized payment link flow with large merchant base and extensive public reviews.",
+      "confidence": "high",
       "product_category": "payments"
     }
   ],
   "included_competitors": [
     "Stripe",
-    "Square"
+    "Square",
+    "PayPal"
   ],
-  "excluded_competitors": [
-    {
-      "competitor_name": "PayPal",
-      "reason": "No usable credentials were provided, so the competitor was excluded from live capture."
-    }
-  ],
+  "excluded_competitors": [],
   "captures": [
     {
       "competitor_name": "Stripe",
       "status": "captured",
-      "summary": "Stripe exposed a concise payment-link creation path with clear dashboard entry points and a management state after creation.",
+      "summary": "Stripe exposed a concise payment-link creation path from public feature pages and help center documentation.",
       "steps": [
         {
           "step_number": 1,
-          "step_label": "entry",
-          "screenshot_path": "runs/2026-04-12T10-30-00Z/stripe/01-entry.png",
-          "url": "https://dashboard.stripe.com/payment-links",
-          "change_note": "Arrived at the payment links dashboard entry page.",
-          "why_it_matters": "Shows the natural logged-in entry point for the feature.",
+          "step_label": "feature-page",
+          "screenshot_path": "output/assets/stripe-feature-payment-links.png",
+          "url": "https://stripe.com/payments/payment-links",
+          "change_note": "Captured the public feature page for payment links.",
+          "why_it_matters": "Shows how Stripe positions payment links to prospective merchants.",
           "visible_headings": [
-            "Payment links",
-            "Create payment link"
+            "Payment Links",
+            "Get started in seconds"
           ],
           "visible_text_snippets": [
-            "Payment links",
-            "Create payment link",
-            "Manage reusable links from one dashboard"
+            "Share a link to accept payments",
+            "No code required",
+            "Customize with your branding"
           ]
         },
         {
           "step_number": 2,
-          "step_label": "create-link-form",
-          "screenshot_path": "runs/2026-04-12T10-30-00Z/stripe/02-create-link-form.png",
-          "url": "https://dashboard.stripe.com/payment-links/create",
-          "change_note": "Opened the form to configure a new reusable link.",
-          "why_it_matters": "Shows the core configuration model and visible modules.",
+          "step_label": "pricing-page",
+          "screenshot_path": "output/assets/stripe-pricing-overview.png",
+          "url": "https://stripe.com/pricing",
+          "change_note": "Captured the pricing page.",
+          "why_it_matters": "Shows Stripe's pricing model and payment links cost structure.",
           "visible_headings": [
-            "Create payment link",
-            "Products"
+            "Pricing",
+            "Integrated per-transaction pricing"
           ]
         },
         {
           "step_number": 3,
-          "step_label": "management-state",
-          "screenshot_path": "runs/2026-04-12T10-30-00Z/stripe/03-management-state.png",
-          "url": "https://dashboard.stripe.com/payment-links/plink_test_123",
-          "change_note": "Viewed the post-creation management page for the link.",
-          "why_it_matters": "Shows operational follow-up options after creation.",
+          "step_label": "help-center",
+          "screenshot_path": "output/assets/stripe-helpcenter-payment-links.png",
+          "url": "https://support.stripe.com/topics/payment-links",
+          "change_note": "Captured help center documentation for payment links.",
+          "why_it_matters": "Shows how Stripe documents the real product flow and edge cases.",
           "visible_headings": [
-            "Payment link details",
-            "Active"
+            "Create a payment link",
+            "Manage payment links"
           ]
         }
       ],
       "analysis": {
-        "experience_summary": "Observed flow moved quickly from a dedicated feature entry into a structured creation form and then a management state.",
+        "experience_summary": "Stripe positions payment links as a no-code entry point for merchants, with deep customization available through the dashboard.",
         "step_reconstruction": [
-          "Opened the payment links entry surface.",
-          "Moved into a focused creation form.",
-          "Reached a management view after link creation."
+          "Merchant visits feature page and learns about payment links.",
+          "Creates a payment link from the dashboard with product and branding settings.",
+          "Shares the link via URL, QR code, or embedded button.",
+          "Manages active links and views analytics from the dashboard."
         ],
         "visible_ui_elements": [
-          "Primary create button",
-          "Product selector",
-          "Status badge",
-          "Link details panel"
+          "Feature page hero section",
+          "Pricing breakdown table",
+          "Help center step-by-step guide"
         ],
         "inferred_capabilities": [
           "Reusable payment links",
-          "Post-creation status management"
+          "Branding customization",
+          "QR code generation",
+          "Post-creation analytics",
+          "Multi-product support"
         ],
         "interaction_patterns": [
-          "Dashboard entry into form workflow",
-          "Dedicated management screen after creation"
+          "Dashboard-first creation workflow",
+          "Share via link, QR, or embed"
         ],
         "strengths": [
-          "Short path to creation",
-          "Clear post-creation management state"
+          "Comprehensive documentation with step-by-step guides",
+          "No-code positioning lowers barrier to entry",
+          "Multiple sharing methods (URL, QR, embed button)"
         ],
         "friction_points": [
-          "Some configuration detail may require prior product setup"
+          "Pricing page does not separate payment link costs from general processing fees"
         ],
         "reusable_ideas": [
-          "Dedicated feature landing state inside the dashboard",
-          "Immediate management page after successful creation"
+          "QR code as a sharing method alongside URL",
+          "Inline preview of the payment page during creation"
         ],
         "caveats": [
-          "Observed only one mainline path with a research account"
+          "Evidence gathered from public sources only — dashboard UI not directly observed"
+        ],
+        "design_patterns": [
+          "dashboard-first",
+          "form-based creation",
+          "tabbed configuration"
+        ],
+        "information_architecture": [
+          "Payments > Payment Links (nested under Payments section)",
+          "Dedicated help center category"
+        ],
+        "unique_differentiators": [
+          "API-first approach allows programmatic link creation",
+          "Embeddable buy button in addition to link sharing"
         ]
+      },
+      "sentiment": {
+        "competitor_name": "Stripe",
+        "overall_direction": "positive",
+        "rating": { "score": 4.5, "max": 5, "source": "G2" },
+        "review_count": 3200,
+        "top_praised": [
+          "Developer-friendly API and documentation",
+          "Quick setup for payment links",
+          "Clean dashboard UI"
+        ],
+        "top_criticized": [
+          "Support response times",
+          "Account holds and fund freezes",
+          "Complex pricing for international transactions"
+        ],
+        "notable_quotes": [
+          "Payment links saved us from building a checkout page — went live in 10 minutes.",
+          "Great product but support is frustrating when you have account issues."
+        ],
+        "entries": [
+          {
+            "source_url": "https://example.com/g2-stripe-review-1",
+            "source_type": "review_platform",
+            "source_name": "G2",
+            "date": "2026-03-15",
+            "sentiment": "positive",
+            "quote_or_paraphrase": "Payment links saved us from building a checkout page — went live in 10 minutes.",
+            "theme": "ease of setup"
+          },
+          {
+            "source_url": "https://example.com/reddit-stripe-discussion",
+            "source_type": "reddit",
+            "source_name": "r/stripe",
+            "date": "2026-02-20",
+            "sentiment": "negative",
+            "quote_or_paraphrase": "Great product but support is frustrating when you have account issues.",
+            "theme": "customer support"
+          }
+        ]
+      },
+      "pricing": {
+        "competitor_name": "Stripe",
+        "pricing_model": "usage-based (per-transaction)",
+        "currency": "USD",
+        "tiers": [
+          {
+            "tier_name": "Standard",
+            "price": "2.9% + $0.30 per transaction",
+            "billing_frequency": "per transaction",
+            "key_features": [
+              "Payment links",
+              "Checkout sessions",
+              "Dashboard management",
+              "Basic analytics"
+            ]
+          }
+        ],
+        "enterprise_available": true,
+        "pricing_page_url": "https://stripe.com/pricing",
+        "screenshot_path": "output/assets/stripe-pricing-overview.png",
+        "notes": [
+          "No separate fee for payment links — included in standard processing rate",
+          "Volume discounts available for enterprise"
+        ],
+        "confidence": "high"
       },
       "warnings": [],
       "navigation_hints_used": [
@@ -172,122 +261,377 @@
     },
     {
       "competitor_name": "Square",
-      "status": "partial",
-      "summary": "Square showed an operational entry point and a configuration step, but the run stopped before final confirmation because of a guarded state.",
+      "status": "captured",
+      "summary": "Square showed a seller-focused checkout link experience with clear public documentation.",
       "steps": [
         {
           "step_number": 1,
-          "step_label": "entry",
-          "screenshot_path": "runs/2026-04-12T10-30-00Z/square/01-entry.png",
-          "url": "https://squareup.com/dashboard",
-          "change_note": "Entered the seller dashboard after login.",
-          "why_it_matters": "Shows where the feature is discovered in the logged-in product.",
+          "step_label": "feature-page",
+          "screenshot_path": "output/assets/square-feature-online-checkout.png",
+          "url": "https://squareup.com/us/en/online-checkout",
+          "change_note": "Captured the online checkout feature page.",
+          "why_it_matters": "Shows Square's positioning and feature set for checkout links.",
           "visible_headings": [
-            "Dashboard",
-            "Online checkout"
+            "Online Checkout",
+            "Accept payments with a link"
           ]
         },
         {
           "step_number": 2,
-          "step_label": "payment-link-setup",
-          "screenshot_path": "runs/2026-04-12T10-30-00Z/square/02-payment-link-setup.png",
-          "url": "https://squareup.com/dashboard/online-checkout/payment-links",
-          "change_note": "Opened the payment-link setup flow.",
-          "why_it_matters": "Shows the available configuration model and surface framing.",
+          "step_label": "pricing-page",
+          "screenshot_path": "output/assets/square-pricing-overview.png",
+          "url": "https://squareup.com/us/en/pricing",
+          "change_note": "Captured the pricing page.",
+          "why_it_matters": "Shows Square's pricing model for online payments.",
           "visible_headings": [
-            "Payment links",
-            "Create link"
+            "Pricing",
+            "No monthly fees"
           ]
         }
       ],
       "analysis": {
-        "experience_summary": "Observed journey exposed the feature from a dashboard surface and then moved into a branded setup experience, but final confirmation was not captured.",
+        "experience_summary": "Square positions checkout links as part of a broader seller toolkit, emphasizing simplicity and no monthly fees.",
         "step_reconstruction": [
-          "Entered the seller dashboard.",
-          "Opened the payment link setup surface."
+          "Seller visits online checkout page.",
+          "Creates a checkout link from the seller dashboard.",
+          "Shares the link or embeds it on a website."
         ],
         "visible_ui_elements": [
-          "Dashboard navigation",
-          "Create link button",
-          "Configuration card"
+          "Feature page with use-case examples",
+          "Pricing comparison cards"
         ],
         "inferred_capabilities": [
-          "Reusable payment links",
-          "Dashboard-based feature discoverability"
+          "Checkout links",
+          "Embeddable payment buttons",
+          "Basic branding customization"
         ],
         "interaction_patterns": [
-          "Feature discovery from seller dashboard",
-          "Guided setup flow"
+          "Seller dashboard creation flow",
+          "Template-based link setup"
         ],
         "strengths": [
-          "Feature discoverable from a central seller area"
+          "No monthly fee — pure transaction-based pricing",
+          "Integrated with broader Square seller ecosystem"
         ],
         "friction_points": [
-          "Completion evidence is incomplete"
+          "Feature page mixes checkout links with broader online store features — less focused"
         ],
         "reusable_ideas": [
-          "Strong dashboard placement for feature entry"
+          "Unified seller dashboard that includes payment links alongside other tools"
         ],
         "caveats": [
-          "Final confirmation state was not observed"
+          "Public evidence only — dashboard UI inferred from help center"
+        ],
+        "design_patterns": [
+          "dashboard-first",
+          "template-based creation"
+        ],
+        "information_architecture": [
+          "Online > Checkout Links (nested under Online section)"
+        ],
+        "unique_differentiators": [
+          "Deep integration with Square POS and in-person payments"
         ]
       },
-      "warnings": [
-        "A guarded or ambiguous state prevented safe continuation."
-      ],
+      "sentiment": {
+        "competitor_name": "Square",
+        "overall_direction": "mixed",
+        "rating": { "score": 4.2, "max": 5, "source": "G2" },
+        "review_count": 1800,
+        "top_praised": [
+          "Easy to get started",
+          "No monthly fees",
+          "Good for small businesses"
+        ],
+        "top_criticized": [
+          "Limited customization options",
+          "Fund holds without clear explanation",
+          "Customer support quality"
+        ],
+        "notable_quotes": [
+          "Perfect for my small shop — no monthly costs and checkout links just work.",
+          "Wish I could customize the checkout page more. It looks generic."
+        ],
+        "entries": [
+          {
+            "source_url": "https://example.com/g2-square-review-1",
+            "source_type": "review_platform",
+            "source_name": "G2",
+            "sentiment": "positive",
+            "quote_or_paraphrase": "Perfect for my small shop — no monthly costs and checkout links just work.",
+            "theme": "ease of use"
+          }
+        ]
+      },
+      "pricing": {
+        "competitor_name": "Square",
+        "pricing_model": "usage-based (per-transaction)",
+        "currency": "USD",
+        "tiers": [
+          {
+            "tier_name": "Online",
+            "price": "2.9% + $0.30 per transaction",
+            "billing_frequency": "per transaction",
+            "key_features": [
+              "Checkout links",
+              "Online store",
+              "Invoice payments"
+            ]
+          }
+        ],
+        "enterprise_available": false,
+        "pricing_page_url": "https://squareup.com/us/en/pricing",
+        "screenshot_path": "output/assets/square-pricing-overview.png",
+        "notes": [
+          "No monthly fee — all transaction-based",
+          "Same rate for checkout links and online store payments"
+        ],
+        "confidence": "high"
+      },
+      "warnings": [],
       "navigation_hints_used": [
         "online checkout",
         "payment links"
+      ]
+    },
+    {
+      "competitor_name": "PayPal",
+      "status": "captured",
+      "summary": "PayPal exposes payment links through multiple public channels with extensive review data available.",
+      "steps": [
+        {
+          "step_number": 1,
+          "step_label": "feature-page",
+          "screenshot_path": "output/assets/paypal-feature-payment-links.png",
+          "url": "https://www.paypal.com/us/business/accept-payments/payment-links",
+          "change_note": "Captured the payment links feature page.",
+          "why_it_matters": "Shows PayPal's positioning for payment links.",
+          "visible_headings": [
+            "Payment Links",
+            "Get paid with a link"
+          ]
+        }
       ],
-      "resume_url": "https://squareup.com/dashboard/online-checkout/payment-links"
+      "analysis": {
+        "experience_summary": "PayPal leverages brand trust and broad merchant adoption for payment links, positioned as a quick way to get paid.",
+        "step_reconstruction": [
+          "Merchant visits feature page.",
+          "Creates a payment link from PayPal business dashboard.",
+          "Shares via email, social media, or messaging."
+        ],
+        "visible_ui_elements": [
+          "Feature page with merchant testimonials",
+          "Share-via options display"
+        ],
+        "inferred_capabilities": [
+          "Payment links",
+          "Social media sharing",
+          "Email sharing",
+          "Buyer trust through PayPal brand"
+        ],
+        "interaction_patterns": [
+          "Multi-channel sharing emphasis",
+          "Brand trust as conversion lever"
+        ],
+        "strengths": [
+          "Strong brand recognition increases buyer conversion",
+          "Multiple sharing channels promoted"
+        ],
+        "friction_points": [
+          "Feature page is less detailed than Stripe's — fewer technical specifics"
+        ],
+        "reusable_ideas": [
+          "Promote sharing channels directly on the feature page"
+        ],
+        "caveats": [
+          "Limited public documentation compared to Stripe"
+        ],
+        "design_patterns": [
+          "wizard-style creation",
+          "multi-channel sharing"
+        ],
+        "information_architecture": [
+          "Business > Accept Payments > Payment Links"
+        ],
+        "unique_differentiators": [
+          "Buyer-side brand trust and familiarity",
+          "Integration with PayPal consumer wallet"
+        ]
+      },
+      "sentiment": {
+        "competitor_name": "PayPal",
+        "overall_direction": "mixed",
+        "rating": { "score": 3.8, "max": 5, "source": "G2" },
+        "review_count": 4500,
+        "top_praised": [
+          "Brand trust with buyers",
+          "Easy to send payment requests",
+          "Wide international reach"
+        ],
+        "top_criticized": [
+          "High fees for small transactions",
+          "Account limitations and holds",
+          "Seller protection disputes"
+        ],
+        "notable_quotes": [
+          "Customers trust PayPal so conversion is higher than other checkout options.",
+          "Fees eat into margins on small transactions. Not great for micro-payments."
+        ],
+        "entries": [
+          {
+            "source_url": "https://example.com/reddit-paypal-thread",
+            "source_type": "reddit",
+            "source_name": "r/smallbusiness",
+            "sentiment": "mixed",
+            "quote_or_paraphrase": "Customers trust PayPal so conversion is higher, but fees are painful for small transactions.",
+            "theme": "pricing vs trust tradeoff"
+          }
+        ]
+      },
+      "pricing": {
+        "competitor_name": "PayPal",
+        "pricing_model": "usage-based (per-transaction)",
+        "currency": "USD",
+        "tiers": [
+          {
+            "tier_name": "Standard",
+            "price": "3.49% + $0.49 per transaction",
+            "billing_frequency": "per transaction",
+            "key_features": [
+              "Payment links",
+              "Invoicing",
+              "PayPal checkout",
+              "Buyer protection"
+            ]
+          }
+        ],
+        "enterprise_available": true,
+        "pricing_page_url": "https://www.paypal.com/us/business/pricing",
+        "screenshot_path": "output/assets/paypal-pricing-overview.png",
+        "notes": [
+          "Higher per-transaction rate than Stripe and Square",
+          "Different rates for different payment methods (card vs PayPal balance)"
+        ],
+        "confidence": "medium"
+      },
+      "warnings": [],
+      "navigation_hints_used": [
+        "payment links"
+      ]
     }
   ],
   "cross_competitor_findings": {
     "recurring_capabilities": [
       "Reusable payment links",
-      "Post-creation operational management"
+      "Dashboard-based link management",
+      "Branding customization",
+      "Multi-channel sharing"
     ],
     "recurring_patterns": [
-      "Logged-in dashboard entry into feature-specific setup",
-      "Dedicated management state after setup"
+      "Dashboard-first creation workflow",
+      "Transaction-based pricing with no monthly fee",
+      "Feature pages emphasize speed-to-launch and no-code setup"
     ],
     "recurring_strengths": [
-      "Short time to reach the core feature",
-      "Clear operational framing once inside the feature"
+      "Quick setup for basic payment collection",
+      "No monthly fees — pure transaction-based models"
     ],
     "recurring_friction_points": [
-      "Some evidence can be blocked by verification or guarded states"
+      "Limited branding customization in lower tiers",
+      "Pricing details for payment links specifically are often buried in general pricing pages"
     ],
-    "coverage_summary": "2 of 3 shortlisted competitors were included in live capture."
-  },
-  "figma_export": {
-    "destination_url": "https://www.figma.com/design/EXAMPLEFILEKEY/Benchmark-Board?node-id=0-1",
-    "page_name": "Investigación",
-    "status": "planned",
-    "layout_plan_path": "runs/2026-04-12T10-30-00Z/figma-export-plan.json",
-    "asset_manifest_path": "runs/2026-04-12T10-30-00Z/figma-assets-manifest.json",
-    "html_board_path": "runs/2026-04-12T10-30-00Z/figma-board.html",
-    "capture_payload_path": "runs/2026-04-12T10-30-00Z/figma-capture-payload.json",
-    "write_payload_path": "runs/2026-04-12T10-30-00Z/figma-write-payload.json",
-    "notes": [
-      "Figma export plan generated successfully.",
-      "Figma asset manifest generated successfully.",
-      "Figma write payload generated successfully.",
-      "HTML board bundle generated successfully from the reusable research template.",
-      "Figma capture payload generated successfully.",
-      "Use FIGMA_CAPTURE_COMMAND with figma-capture-payload.json to capture the generated HTML board into the destination file.",
-      "Use Codex Figma tooling or FIGMA_WRITE_COMMAND with figma-write-payload.json only as a fallback when HTML capture is unavailable."
+    "coverage_summary": "3 of 3 discovered competitors were included in public evidence capture.",
+    "feature_matrix": {
+      "feature_name": "Payment links",
+      "subfeatures": [
+        {
+          "subfeature_name": "Branding customization",
+          "description": "Ability to customize the payment page with brand colors, logo, and images",
+          "support_by_competitor": {
+            "Stripe": "supported",
+            "Square": "partial",
+            "PayPal": "partial"
+          },
+          "best_implementation": "Stripe",
+          "notes": "Stripe offers the most granular branding options"
+        },
+        {
+          "subfeature_name": "Link expiration",
+          "description": "Set an expiration date or time limit on the payment link",
+          "support_by_competitor": {
+            "Stripe": "supported",
+            "Square": "unknown",
+            "PayPal": "supported"
+          }
+        },
+        {
+          "subfeature_name": "QR code generation",
+          "description": "Generate a QR code from the payment link for in-person sharing",
+          "support_by_competitor": {
+            "Stripe": "supported",
+            "Square": "supported",
+            "PayPal": "supported"
+          }
+        },
+        {
+          "subfeature_name": "Multi-currency",
+          "description": "Accept payments in multiple currencies from a single link",
+          "support_by_competitor": {
+            "Stripe": "supported",
+            "Square": "not_supported",
+            "PayPal": "supported"
+          },
+          "best_implementation": "Stripe"
+        },
+        {
+          "subfeature_name": "Analytics / reporting",
+          "description": "View click-through rates, conversion, and payment data per link",
+          "support_by_competitor": {
+            "Stripe": "supported",
+            "Square": "partial",
+            "PayPal": "partial"
+          },
+          "best_implementation": "Stripe"
+        },
+        {
+          "subfeature_name": "Embeddable buy button",
+          "description": "Embed a payment button on an external website that links to the checkout",
+          "support_by_competitor": {
+            "Stripe": "supported",
+            "Square": "supported",
+            "PayPal": "supported"
+          }
+        },
+        {
+          "subfeature_name": "Subscription / recurring",
+          "description": "Create payment links for recurring subscriptions",
+          "support_by_competitor": {
+            "Stripe": "supported",
+            "Square": "not_supported",
+            "PayPal": "supported"
+          }
+        }
+      ],
+      "table_stakes": [
+        "QR code generation",
+        "Embeddable buy button",
+        "Basic branding"
+      ],
+      "differentiators": [
+        "Multi-currency support",
+        "Subscription payment links",
+        "Granular analytics per link",
+        "API-based programmatic creation"
+      ]
+    },
+    "sentiment_themes": [
+      "Ease of setup is universally praised",
+      "Fund holds and account issues are a recurring pain point across all three",
+      "Pricing transparency varies — Stripe clearest, PayPal most complex",
+      "Customer support quality is criticized across all competitors",
+      "Brand trust matters for buyer conversion — PayPal leads here"
     ]
   },
-  "warnings": [
-    "PayPal was excluded because no credentials were provided."
-  ],
-  "manual_intervention_checkpoints": [
-    {
-      "competitor_name": "Square",
-      "reason": "The flow reached a guarded state that required manual confirmation before proceeding.",
-      "url": "https://squareup.com/dashboard/online-checkout/payment-links",
-      "created_at": "2026-04-12T10:52:00.000Z"
-    }
-  ]
+  "warnings": [],
+  "manual_intervention_checkpoints": []
 }

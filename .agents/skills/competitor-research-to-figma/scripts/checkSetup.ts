@@ -301,8 +301,11 @@ export async function runSetupValidation(destinationUrl?: string): Promise<Setup
     validateFigmaSetup(destinationUrl),
     validateBrowserSetup(),
   ]);
+  // Figma is only required when a destination URL is provided.
+  // Browser is optional — the skill can run with just web search and web fetch.
+  const figmaRequired = Boolean(destinationUrl);
   return {
-    ok: figma.ok && browser.ok,
+    ok: figmaRequired ? figma.ok && browser.ok : true,
     figma,
     browser,
   };

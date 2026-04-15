@@ -117,7 +117,7 @@ export function buildFigmaExportPlan(run: ResearchRun): FigmaExportPlan {
   const sections = buildSections(run);
   return {
     run_id: run.run_id,
-    destination_url: run.input.figma_destination_url,
+    destination_url: run.input.figma_destination_url ?? "",
     page_name: "Investigación",
     generated_at: new Date().toISOString(),
     layout: {
@@ -617,7 +617,7 @@ function buildHtmlBoard(run: ResearchRun, plan: FigmaExportPlan): string {
         run_id: run.run_id,
         generated_at: plan.generated_at,
         feature_description: run.input.feature_description,
-        destination_url: run.input.figma_destination_url,
+        destination_url: run.input.figma_destination_url ?? "",
         included_competitors: run.included_competitors,
         excluded_competitors: run.excluded_competitors,
         captures: run.captures,
@@ -1069,7 +1069,7 @@ export function exportResearchToFigma(run: ResearchRun): ResearchRun {
     ...run,
     updated_at: new Date().toISOString(),
     figma_export: {
-      destination_url: run.input.figma_destination_url,
+      destination_url: run.input.figma_destination_url ?? "",
       page_name: "Investigación",
       status: exported ? "exported" : "planned",
       layout_plan_path: planPath,
@@ -1092,10 +1092,10 @@ async function main(): Promise<void> {
   writeJsonFile(path.join(exported.run_directory, "research-run.json"), exported);
 
   logSection("Figma Export");
-  console.log(`Destination: ${exported.figma_export.destination_url}`);
-  console.log(`Page: ${exported.figma_export.page_name}`);
-  console.log(`Status: ${exported.figma_export.status}`);
-  console.log(`Plan: ${exported.figma_export.layout_plan_path}`);
+  console.log(`Destination: ${exported.figma_export?.destination_url}`);
+  console.log(`Page: ${exported.figma_export?.page_name}`);
+  console.log(`Status: ${exported.figma_export?.status}`);
+  console.log(`Plan: ${exported.figma_export?.layout_plan_path}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

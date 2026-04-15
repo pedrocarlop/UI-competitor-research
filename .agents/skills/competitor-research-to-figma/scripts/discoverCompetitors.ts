@@ -46,7 +46,15 @@ interface ResolvedCatalogEntry {
   default_confidence: ConfidenceLevel;
 }
 
-const COMPETITOR_CATALOG: CompetitorCatalogEntry[] = [
+export interface DiscoveryResult {
+  competitors: DiscoveredCompetitor[];
+  discovery_queries?: string[];
+}
+
+// Built-in catalog serves as a seed for payments-related queries.
+// For other domains, the skill prompt instructs the LLM to use web search
+// and pass results via competitor_allowlist or discovered_competitors_path.
+const PAYMENTS_CATALOG: CompetitorCatalogEntry[] = [
   {
     competitor_name: "Stripe",
     product_url: "https://stripe.com/payments/payment-links",
@@ -150,7 +158,7 @@ const COMPETITOR_CATALOG: CompetitorCatalogEntry[] = [
 
 function loadCatalog(catalogPath?: string): CompetitorCatalogEntry[] {
   if (!catalogPath) {
-    return COMPETITOR_CATALOG;
+    return PAYMENTS_CATALOG;
   }
 
   const catalog = readJsonFile<{ competitors: CompetitorCatalogEntry[] }>(catalogPath);
@@ -234,6 +242,26 @@ function isCompanyExclusion(entryName: string, companyName?: string): boolean {
   return entryTokens.length > 0 && entryTokens.every((token) => companyTokens.includes(token));
 }
 
+/**
+ * Generate web search queries that the LLM should execute to discover competitors
+ * for domains not covered by the built-in catalog.
+ */
+function buildDiscoveryQueries(featureDescription: string): string[] {
+  const tokens = tokenize(featureDescription);
+  const topicPhrase = featureDescription.trim();
+  const year = new Date().getFullYear();
+
+  return [
+    `${topicPhrase} competitors ${year}`,
+    `best ${topicPhrase} tools ${year}`,
+    `${topicPhrase} alternatives comparison`,
+    `${topicPhrase} software market overview`,
+    `G2 ${topicPhrase} category`,
+    `Capterra ${topicPhrase} software`,
+    ...(tokens.length > 2 ? [`"${tokens.slice(0, 3).join(" ")}" competitors`] : []),
+  ];
+}
+
 export function discoverCompetitors(request: DiscoveryRequest): DiscoveredCompetitor[] {
   assertSafeToProceed(request);
   const catalog = loadCatalog(request.catalog_path);
@@ -249,12 +277,7 @@ export function discoverCompetitors(request: DiscoveryRequest): DiscoveredCompet
     .map((entry) => {
       const resolvedEntry = resolveCatalogEntry(entry, request.locale);
       const keywordMatches = resolvedEntry.keywords.filter((keyword) => featureTokens.includes(keyword));
-      const categoryBoost = featureTokens.some((token) => ["payment", "merchant", "checkout", "link"].includes(token))
-        ? resolvedEntry.product_category === "payments"
-          ? 2
-          : 0
-        : 0;
-      const score = keywordMatches.length + categoryBoost;
+      const score = keywordMatches.length;
       return {
         entry: resolvedEntry,
         keywordMatches,
@@ -290,26 +313,56 @@ export function discoverCompetitors(request: DiscoveryRequest): DiscoveredCompet
   return shortlisted;
 }
 
+/**
+ * Extended discovery that returns both catalog matches and suggested web search queries
+ * for the LLM to execute when the catalog does not cover the research domain.
+ */
+export function discoverCompetitorsWithQueries(request: DiscoveryRequest): DiscoveryResult {
+  const competitors = discoverCompetitors(request);
+
+  // If the catalog produced enough matches with keyword overlap, return them
+  const hasStrongMatches = competitors.some(
+    (c) => (c.keyword_matches?.length ?? 0) >= 2,
+  );
+
+  if (hasStrongMatches && competitors.length >= 3) {
+    return { competitors };
+  }
+
+  // Otherwise, also return discovery queries for the LLM to use with web search
+  return {
+    competitors,
+    discovery_queries: buildDiscoveryQueries(request.feature_description),
+  };
+}
+
 async function main(): Promise<void> {
   const input = requireInput<DiscoveryRequest>(
     process.argv.slice(2),
     "Usage: npm run discover -- --input ./input/discovery.json --output ./runs/discovery.json",
   );
   const args = parseArgs(process.argv.slice(2));
-  const discovered = discoverCompetitors(input);
+  const result = discoverCompetitorsWithQueries(input);
   const outputPath = args.output;
 
   logSection("Competitor Discovery");
-  console.log(`Generated ${discovered.length} competitors at ${nowIso()}.`);
-  for (const competitor of discovered) {
+  console.log(`Generated ${result.competitors.length} competitors at ${nowIso()}.`);
+  for (const competitor of result.competitors) {
     console.log(`- ${competitor.competitor_name}: ${competitor.reason_for_inclusion}`);
   }
 
+  if (result.discovery_queries) {
+    console.log(`\nSuggested web search queries for broader discovery:`);
+    for (const query of result.discovery_queries) {
+      console.log(`  - ${query}`);
+    }
+  }
+
   if (outputPath) {
-    writeJsonFile(outputPath, discovered);
+    writeJsonFile(outputPath, result);
     console.log(`\nSaved discovery output to ${outputPath}`);
   } else {
-    console.log(`\n${JSON.stringify(discovered, null, 2)}`);
+    console.log(`\n${JSON.stringify(result, null, 2)}`);
   }
 }
 

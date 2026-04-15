@@ -951,7 +951,7 @@ function buildStoredInputForCapture(request: CaptureRequest): ResearchRun["input
   const credentialRegistryPath = resolveCredentialPath(request);
   return buildStoredResearchInput({
     feature_description: request.feature_description,
-    figma_destination_url: request.figma_destination_url,
+    ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
     ...(request.company_name ? { company_name: request.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
     ...(request.catalog_path ? { catalog_path: request.catalog_path } : {}),
@@ -1097,7 +1097,7 @@ export async function captureCompetitorFlows(request: CaptureRequest): Promise<R
 
   const setup = await runSetupValidation(request.figma_destination_url);
   if (!setup.ok) {
-    throw new Error("Setup validation failed. Run checkSetup.ts and resolve missing Figma or browser tooling before capture.");
+    console.warn("Setup validation warning: some tooling is unavailable. Capture will proceed with available tools.");
   }
 
   const { runId, runDirectory } = createRunDirectory(process.cwd(), request.run_id);
@@ -1116,7 +1116,9 @@ export async function captureCompetitorFlows(request: CaptureRequest): Promise<R
     excluded_competitors: result.excluded_competitors,
     captures: result.captures,
     cross_competitor_findings: emptyCrossFindings(),
-    figma_export: defaultFigmaExport(request.figma_destination_url, runDirectory),
+    ...(request.figma_destination_url
+      ? { figma_export: defaultFigmaExport(request.figma_destination_url, runDirectory) }
+      : {}),
     warnings: result.warnings,
     manual_intervention_checkpoints: result.manual_intervention_checkpoints,
   };
