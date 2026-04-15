@@ -256,7 +256,13 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
 - **Subagent prompt:** "You are a competitive intelligence researcher focused on a single competitor. Gather comprehensive public evidence for {competitor_name} ({product_url}) regarding: {research_question}.
 
   YOUR TASKS:
-  1. EVIDENCE CAPTURE: Visit the sources listed in the source map below. Capture screenshots of key pages (homepage, pricing, feature pages, help center). Record source URLs and context notes. Save screenshots to {output_assets_path} using naming: {competitor_slug}-{source}-{topic}.png. Reconstruct task flows from help center guides, YouTube demos, or app store screenshots. Search for case studies, developer discourse (Stack Overflow, GitHub, Hacker News), and news coverage.
+  1. EVIDENCE CAPTURE: Visit the sources listed in the source map below. For each key page (homepage, pricing, feature pages, help center):
+     - Navigate to the page using the Chrome browser MCP tools (mcp__Claude_in_Chrome__navigate, then mcp__Claude_in_Chrome__read_page or mcp__Claude_in_Chrome__get_page_text for content).
+     - Capture a screenshot using the computer-use screenshot tool (mcp__computer-use__screenshot), then write the image bytes to {output_assets_path}/{competitor_slug}-{source}-{topic}.png using the Write tool.
+     - If computer-use screenshot is unavailable, use mcp__Claude_in_Chrome__read_page to get full page content as a fallback and note 'no screenshot captured' in the context note.
+     - Record the source URL and a short context note for each captured asset.
+     - Reconstruct task flows from help center guides, YouTube demos, or app store screenshots.
+     - Search for case studies, developer discourse (Stack Overflow, GitHub, Hacker News), and news coverage.
   2. PRICING ANALYSIS: Visit the pricing page. Record tier names, prices, billing frequency, currency. Classify the pricing model. Note per-usage breakdowns, operational fees, add-on costs, and notable strategies. {locale_pricing_instruction}
   3. SENTIMENT: Search G2, Capterra, App Store, Google Play, Reddit, Stack Overflow, GitHub, and Hacker News for reviews and discussions about {competitor_name} and {research_question}. Record overall rating, sentiment direction, top praised/criticized aspects, and notable quotes with source URLs.
 
