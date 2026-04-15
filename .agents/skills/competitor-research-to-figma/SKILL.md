@@ -53,7 +53,7 @@ Subagent model tiers range from high-reasoning to minimal, matched to task compl
 | 3. Discover competitors | **Subagent** | sonnet | gpt-5.4 / medium | Evaluating relevance across many candidates |
 | 4. Build source map | **Subagent** | haiku | gpt-5.4-mini / low | Systematic URL enumeration |
 | 5. Feature matrix | Orchestrator | opus (main) | gpt-5.4 (main) | High synthesis, cross-referencing many sources |
-| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.4-mini / high | Per-competitor data gathering, needs judgment |
+| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.4 / medium | Per-competitor data gathering, needs judgment |
 | 9. Analysis & synthesis | Orchestrator | opus (main) | gpt-5.4 (main) | Core strategic reasoning |
 | 9b. Strategic thesis | Orchestrator | opus (main) | gpt-5.4 (main) | Highest reasoning required |
 | 10. Unknowns | **Subagent** | haiku | gpt-5.4-mini / low | Systematic gap documentation |
@@ -85,18 +85,12 @@ Use custom agent TOML files in `.codex/agents/`. Each TOML defines a subagent ro
 Available agent definitions:
 - `market-researcher` — steps 2+3 (market context + discovery) — `gpt-5.4` / medium effort
 - `source-mapper` — step 4 (source map) — `gpt-5.4-mini` / low effort
-- `evidence-gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.4-mini` / high effort
+- `evidence-gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.4` / medium effort
 - `gap-documenter` — step 10 (unknowns) — `gpt-5.4-mini` / low effort
 
 #### Antigravity
 
-If the `spawn-agent` skill is installed (`~/.gemini/antigravity/skills/spawn-agent`), delegate via:
-
-```bash
-./scripts/spawn-agent.sh --gemini --yolo -p "<subagent prompt with inputs>"
-```
-
-Otherwise, execute all steps directly on the main model.
+Antigravity does not support subagent spawning. Execute all steps directly on the main model.
 
 ### Fallback behavior
 

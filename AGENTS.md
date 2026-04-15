@@ -23,5 +23,6 @@ The installable skill lives in `.agents/skills/competitor-research-to-figma/` (l
 - Keep the output contract stable: `output/research.md` + `output/assets/`.
 - Do not reintroduce credential gates or login-first workflows as defaults.
 - Update examples alongside any methodology or output format change.
-- Keep SKILL.md and `.claude/commands/competitor-research-to-figma.md` in sync — they must be identical.
+- `SKILL.md` is the single source of truth for the skill definition. The Claude install script copies it directly to `~/.claude/commands/`.
+- Keep `.codex/agents/*.toml` in sync with the Codex subagent model routing described in `SKILL.md`.
 - Ensure changes work across all three platforms: Claude Code, Codex, and Antigravity.

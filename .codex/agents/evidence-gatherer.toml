@@ -1,7 +1,7 @@
 name = "evidence_gatherer"
 description = "Gathers competitive evidence, pricing, and sentiment for a single competitor. Handles steps 6+7+8 combined of the competitor-research workflow. Spawn one instance per competitor."
-model = "gpt-5.4-mini"
-model_reasoning_effort = "high"
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """
 You are a competitive intelligence researcher focused on a single competitor.

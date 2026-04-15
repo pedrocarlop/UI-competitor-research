@@ -288,7 +288,7 @@ competitors:
 ["Stripe", "Twilio", "Algolia"]
 ```
 
-See more examples in the [example prompts](/.agents/skills/competitor-research/examples/invocation.example.md).
+See more examples in the [example prompts](/.agents/skills/competitor-research-to-figma/examples/invocation.example.md).
 
 ---
 
