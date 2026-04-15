@@ -125,6 +125,16 @@ export interface CompetitorCapture {
   resume_url?: string;
   sentiment?: CompetitorSentiment;
   pricing?: CompetitorPricing;
+  case_studies?: CaseStudy[];
+  developer_discourse?: DeveloperDiscourseEntry[];
+}
+
+export interface ThematicDeepDive {
+  theme_title: string;
+  narrative: string;
+  competitors_compared: string[];
+  key_insight: string;
+  evidence_urls: string[];
 }
 
 export interface CrossCompetitorFindings {
@@ -135,6 +145,9 @@ export interface CrossCompetitorFindings {
   coverage_summary: string;
   feature_matrix?: FeatureMatrix;
   sentiment_themes?: string[];
+  strategic_thesis?: string;
+  strategic_narrative?: string;
+  thematic_deep_dives?: ThematicDeepDive[];
 }
 
 export interface FigmaLayoutStep {
@@ -212,6 +225,7 @@ export interface ResearchRun {
   cross_competitor_findings: CrossCompetitorFindings;
   figma_export?: FigmaExportMetadata;
   market_context?: MarketContext;
+  citations?: InlineCitation[];
   warnings: string[];
   manual_intervention_checkpoints: ManualInterventionCheckpoint[];
 }
@@ -269,7 +283,8 @@ export interface ImportedEvidenceResult {
 // --- Customer sentiment types ---
 
 export type SentimentDirection = "positive" | "negative" | "mixed" | "neutral";
-export type SentimentSourceType = "app_store" | "review_platform" | "reddit" | "forum" | "social" | "other";
+export type SentimentSourceType = "app_store" | "review_platform" | "reddit" | "forum" | "social" | "developer_community" | "case_study" | "news" | "other";
+export type CaseStudySourceType = "case_study_page" | "blog_post" | "press_release" | "community_post" | "news_article";
 
 export interface SentimentEntry {
   source_url: string;
@@ -302,6 +317,12 @@ export interface PricingTier {
   limitations?: string[];
 }
 
+export interface CostBreakdown {
+  cost_dimension: string;
+  rate: string;
+  conditions?: string;
+}
+
 export interface CompetitorPricing {
   competitor_name: string;
   pricing_model: string;
@@ -313,6 +334,35 @@ export interface CompetitorPricing {
   screenshot_path?: string;
   notes: string[];
   confidence: ConfidenceLevel;
+  cost_breakdowns?: CostBreakdown[];
+  operational_fees?: string[];
+  notable_strategies?: string[];
+}
+
+export interface CaseStudy {
+  company_name: string;
+  use_case: string;
+  competitor_used: string;
+  outcome?: string;
+  source_url: string;
+  source_type: CaseStudySourceType;
+  confidence: ConfidenceLevel;
+}
+
+export interface DeveloperDiscourseEntry {
+  source_url: string;
+  source_name: string;
+  topic: string;
+  sentiment: SentimentDirection;
+  key_point: string;
+  date?: string;
+}
+
+export interface InlineCitation {
+  ref_number: number;
+  title: string;
+  url: string;
+  accessed_date?: string;
 }
 
 // --- Feature matrix types ---
@@ -323,6 +373,9 @@ export interface SubfeatureEntry {
   subfeature_name: string;
   description: string;
   support_by_competitor: Record<string, FeatureSupport>;
+  detail_by_competitor?: Record<string, string>;
+  citation_by_competitor?: Record<string, number>;
+  constraints_by_competitor?: Record<string, string>;
   best_implementation?: string;
   notes?: string;
 }
@@ -336,6 +389,26 @@ export interface FeatureMatrix {
 
 // --- Market context types ---
 
+export interface RegulatoryContext {
+  jurisdiction: string;
+  regulation_name: string;
+  effective_date?: string;
+  impact_summary: string;
+  affected_competitors: string[];
+  evidence_url: string;
+  confidence: ConfidenceLevel;
+}
+
+export interface RegionalAnalysis {
+  locale: string;
+  market_overview: string;
+  dominant_local_platforms: string[];
+  regulatory_contexts: RegulatoryContext[];
+  locale_specific_pricing?: string;
+  competitor_coverage: Record<string, string>;
+  evidence_urls: string[];
+}
+
 export interface MarketContext {
   domain: string;
   market_segments: string[];
@@ -343,6 +416,7 @@ export interface MarketContext {
   recent_events: string[];
   regulatory_notes?: string[];
   sources: Array<{ title: string; url: string }>;
+  regional_analyses?: RegionalAnalysis[];
 }
 
 export function parseArgs(argv: string[]): Record<string, string> {

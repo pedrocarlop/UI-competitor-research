@@ -284,12 +284,21 @@ export function analyzeRun(run: ResearchRun): ResearchRun {
   const recurringStrengths = dedupe(captures.flatMap((capture) => capture.analysis.strengths)).slice(0, 8);
   const recurringFrictionPoints = dedupe(captures.flatMap((capture) => capture.analysis.friction_points)).slice(0, 8);
 
+  // Preserve LLM-populated strategic fields if they already exist on the run
+  const existing = run.cross_competitor_findings;
+
   const crossCompetitorFindings: CrossCompetitorFindings = {
     recurring_capabilities: recurringCapabilities,
     recurring_patterns: recurringPatterns,
     recurring_strengths: recurringStrengths,
     recurring_friction_points: recurringFrictionPoints,
     coverage_summary: `${run.included_competitors.length} of ${run.discovered_competitors.length} shortlisted competitors were covered by captured or imported evidence.`,
+    // Preserve existing fields populated by the LLM
+    ...(existing.feature_matrix ? { feature_matrix: existing.feature_matrix } : {}),
+    ...(existing.sentiment_themes ? { sentiment_themes: existing.sentiment_themes } : {}),
+    ...(existing.strategic_thesis ? { strategic_thesis: existing.strategic_thesis } : {}),
+    ...(existing.strategic_narrative ? { strategic_narrative: existing.strategic_narrative } : {}),
+    ...(existing.thematic_deep_dives ? { thematic_deep_dives: existing.thematic_deep_dives } : {}),
   };
 
   return {

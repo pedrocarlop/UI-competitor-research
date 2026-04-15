@@ -29,6 +29,9 @@ Gather evidence from these public sources (in priority order for most research q
 10. Blog posts (when directly relevant to the research question)
 11. User reviews and forums — real user experience
 12. Product directories and comparison pages
+13. Case studies and customer success stories — named customer examples with measurable outcomes
+14. Developer community discussions — Stack Overflow, GitHub Issues/Discussions, Hacker News, developer blogs
+15. News articles and press coverage — product launches, partnerships, notable deployments
 
 ## Discovery rules
 
@@ -95,6 +98,29 @@ Every finding must include:
 - Separate verified user reviews (G2, App Store) from anonymous forum posts in terms of confidence.
 - Look for recurring themes, not just individual complaints.
 - Record both positive and negative sentiment — avoid selection bias.
+
+## Citation rules
+
+- Every factual claim in the report must have an inline citation using numbered footnotes `[N]`.
+- Citations must appear inline next to the claim, not clustered at the end of a section.
+- Feature matrix cells should include a footnote number when the support status is based on a specific source. Example: `Supported [12]` or `Partial — max 20 items [14]`.
+- Pricing figures must cite the source page and access date.
+- When the same source supports multiple claims, reuse the same footnote number.
+- The footnote index at the end of the report must list every footnote number with full URL, source title, and access date.
+- Format: `[N]` in the body, then `N. Source title, accessed on YYYY-MM-DD. URL` in the index.
+
+## Regional and regulatory research rules
+
+When `locale` is provided, or when the research question references a specific region or country:
+
+- Search for "[locale] [product category] regulations [year]" and "[locale] [product category] compliance requirements"
+- Search for "[locale] [feature domain] adoption statistics" or "[locale] dominant [product category] platforms" to understand the local competitive landscape
+- Identify if any competitor has locale-specific product pages, documentation, or pricing
+- Note which competitors are available in the target locale vs. not
+- Cite the specific regulation name, effective date, and government source where possible
+- Note how each competitor handles local compliance requirements (tax, data residency, industry mandates) if relevant to the domain
+- Search for dominant local platforms or services in the feature domain and their market share (e.g., for payments: local A2A methods; for messaging: local apps; for cloud storage: local providers)
+- Search for news about upcoming regulatory changes in the locale that affect the domain
 
 ## Market context rules
 

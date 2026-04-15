@@ -57,7 +57,14 @@ Before diving into individual competitors, build a landscape view:
 - Identify notable industry standards, regulations, or compliance considerations
 - Record 3-5 key trends shaping the space
 
-Produce a brief "Market Landscape" section for the report.
+When a `locale` is provided, or when the research question mentions a specific region or country, conduct locale-specific research:
+- Search for dominant local platforms, services, or alternatives relevant to the feature domain (e.g., for payments: Bizum in Spain, iDEAL in Netherlands; for messaging: KakaoTalk in Korea, WeChat in China; for e-commerce: Mercado Libre in Latin America)
+- Search for relevant regulatory mandates affecting the feature domain in that jurisdiction (e.g., tax reporting requirements, data residency laws, industry-specific compliance mandates)
+- Search for each competitor's availability, localization quality, and regional pricing in that market
+- Record regional pricing structures if they differ from the global default
+- Note market share data for local vs. global platforms or services in the feature domain
+
+Produce a "Market Landscape" section for the report. When locale-specific research was conducted, also produce a "Regional Analysis" section.
 
 ### 3. Discover competitors dynamically
 
@@ -100,12 +107,18 @@ Record the source map before starting evidence collection.
 
 For the target feature, identify all subfeatures and capabilities mentioned across competitors:
 - Scan feature pages, help center articles, changelogs, and comparison pages
-- List every distinct subfeature or capability (e.g., for "payment links": branding customization, expiration dates, partial payments, analytics, webhooks, multi-currency, QR codes)
+- List every distinct subfeature or capability (e.g., for "payment links": branding customization, expiration dates, partial payments, analytics, webhooks, multi-currency, QR codes; for "user onboarding": step sequencing, progress indicators, email triggers, SSO, localization, in-app guidance; for "search": filters, autocomplete, ranking controls, analytics, personalization)
 - Build a feature matrix: rows = subfeatures, columns = competitors
 - For each cell: supported / partially supported / not supported / unknown
 - Identify table-stakes features (supported by most or all competitors)
 - Identify differentiators (supported by few competitors)
 - Note which competitor has the best implementation of each subfeature and why
+
+For each subfeature, go beyond binary support status. Document:
+- Specific constraints or limits (e.g., "maximum 20 items per bundle", "capped at $10,000 per link")
+- How the implementation qualitatively differs between competitors (e.g., "Stripe supports adjustable quantities; Square uses rigid one-to-one links")
+- Which public source confirms the support level (for inline citation)
+- Whether the feature requires a specific tier, plan, or add-on to access
 
 ### 6. Collect evidence and capture flows
 
@@ -124,6 +137,11 @@ Where possible, reconstruct task flows and user journeys from:
 - App store screenshot sequences
 - Feature page descriptions and diagrams
 
+For each competitor, also search for:
+- **Case studies and customer stories:** Search `[competitor] case study [feature]`, `[competitor] customer story`, `[competitor] used by [company]`. Record any named customer examples with their use case and measurable outcomes (e.g., "OpenAI used Stripe Payment Links for ChatGPT Plus subscriptions", "MemberPress reported 30% conversion lift after integrating Stripe Link").
+- **Developer community discourse:** Search `[competitor] [feature] site:stackoverflow.com`, `[competitor] [feature] site:github.com`, `[competitor] site:news.ycombinator.com`. These provide technical depth and candid assessments that marketing pages and review platforms miss.
+- **News and press coverage:** Search for recent articles about product launches, partnerships, or notable deployments related to the feature.
+
 ### 7. Analyze pricing models
 
 For each competitor with a public pricing page:
@@ -135,7 +153,15 @@ For each competitor with a public pricing page:
 - Classify the pricing model: usage-based, seat-based, flat-rate, freemium, custom, hybrid
 - Note any notable pricing strategies (e.g., reverse trial, volume discounts, startup programs)
 
-Produce a pricing comparison table in the report.
+For each competitor, also research:
+- Pricing breakdowns by usage dimension, tier, or transaction type that applies to the feature domain (e.g., for payments: per-method rates; for APIs: per-call tiers; for SaaS: per-seat or per-workspace; for marketplaces: per-transaction or percentage fees)
+- Overage, penalty, or operational fees beyond the headline rate (e.g., dispute fees for payments, overage fees for API rate limits, seat overages for SaaS)
+- Hidden or add-on costs that unlock key capabilities (e.g., custom domain fees, branding unlock fees, export fees, premium integrations)
+- Notable pricing strategies or developer/community critiques (e.g., layered SaaS add-on fees, "Indie Tax" dynamics, feature-gating criticism)
+
+When a `locale` is specified, also research regional pricing differences. Note whether competitors charge different rates or have different tiers for that market, and whether any locally dominant platforms in that domain affect the competitive pricing dynamic.
+
+Produce a pricing comparison table in the report. When the domain has meaningful per-usage or per-dimension breakdowns, include those — not just the headline rate. Follow the table with narrative analysis of pricing strategy differences.
 
 If pricing is gated behind a sales call or not publicly available, record this as an unknown with confidence level.
 
@@ -146,6 +172,7 @@ For each competitor, search for and collect customer feedback:
 - **Review platforms**: Search G2, Capterra, TrustRadius for the product. Note overall score, number of reviews, and top praised/criticized aspects.
 - **Reddit discussions**: Search Reddit for "[product name] [feature]" threads. Note common complaints, praise, and feature requests.
 - **Forum and community mentions**: Search for community discussions, Stack Overflow questions, or product-specific forums.
+- **Developer community**: Search Stack Overflow for technical questions and pain points, GitHub Issues/Discussions for bug reports and feature requests, and Hacker News for candid industry commentary. Developer sentiment often reveals architectural limitations and operational friction that review platforms miss.
 
 For each source, record:
 - Source URL
@@ -180,6 +207,19 @@ Review all collected evidence and produce real, specific analysis:
 - What are industry best practices that emerge from the evidence?
 - Where do competitors cluster vs. diverge in their approaches?
 
+**Strategic narrative:**
+Write a strategic narrative (3-5 paragraphs) that synthesizes the most important comparative insight. This should read like an analyst brief, not a checklist. Structure it as: thesis statement → supporting evidence across competitors → implications for someone building or evaluating in this space. Every factual claim must have an inline citation using numbered footnotes `[N]`.
+
+### 9b. Build strategic thesis
+
+After completing the analysis, step back and identify the single most important strategic insight:
+
+1. **Identify the fundamental philosophical difference** between the competitors. What operating model, target user, or design philosophy separates them? (e.g., "programmable infrastructure vs. omnichannel POS extension", "developer-first vs. operations-first", "horizontal platform vs. vertical solution")
+2. **Articulate a 1-2 sentence thesis statement** that captures this core competitive dynamic. This becomes the opening line of the executive summary.
+3. **Validate the thesis** against evidence from each competitor — does it explain the feature choices, pricing models, and positioning you observed?
+4. **Identify 3-5 thematic dimensions** where the competitors diverge in interesting ways (e.g., architecture philosophy, cart dynamics, pricing economics, customization depth, regional strategy). These become the thematic analysis sections.
+5. **Write 2-4 paragraphs of narrative synthesis** for each theme, comparing all competitors side by side with inline citations. Each theme should end with a key insight.
+
 For every finding, clearly distinguish:
 - **Observed** — directly seen in the source material
 - **Inferred** — a conclusion drawn from observed evidence (clearly labeled)
@@ -198,26 +238,31 @@ For anything that could not be determined from public evidence:
 
 Write `output/research.md` with these sections:
 
-1. **Executive summary** — 3-5 key takeaways a PO or designer should know immediately
-2. **Market landscape** — industry context, segments, trends, recent events
-3. **Research goal and scope** — what was investigated and why
-4. **Competitors covered** — which competitors, why, and at what confidence level
-5. **Methodology** — how evidence was gathered, which source types, what tools
-6. **Feature matrix** — subfeature comparison table across all competitors
-7. **Per-competitor deep dives** — for each competitor:
+1. **Executive summary** — Open with a 1-2 sentence strategic thesis that captures the fundamental competitive dynamic. Follow with 3-5 key insights that support, nuance, or qualify the thesis. Write in narrative prose with inline citations, not as a bullet list. This is the "if you read one section" summary that a decision-maker can act on.
+2. **Market landscape** — industry context, segments, trends, recent events, with source citations
+3. **Regional analysis** (when applicable) — appears when `locale` is specified or when regional dynamics are material. Includes dominant local platforms or services, regulatory mandates, competitor availability in the market, and locale-specific pricing differences.
+4. **Research goal and scope** — what was investigated and why
+5. **Competitors covered** — which competitors, why, and at what confidence level
+6. **Methodology** — how evidence was gathered, which source types, what tools
+7. **Feature matrix** — subfeature comparison table across all competitors. Each cell should include constraints, limits, and a footnote reference. Go beyond Yes/No — capture nuance (e.g., `Partial — max 20 items, no cross-sells [14]`).
+8. **Per-competitor deep dives** — for each competitor:
    - Overview and positioning
    - Key screenshots with source links
    - Task flows and user journeys
-   - Pricing model summary
-   - Strengths (with evidence)
-   - Weaknesses (with evidence)
+   - Case studies (if any named customer examples were found)
+   - Pricing model summary with per-method fee breakdowns
+   - Strengths (with evidence and inline citations)
+   - Weaknesses (with evidence and inline citations)
    - Customer sentiment summary
-8. **Pricing comparison** — cross-competitor pricing table and analysis
-9. **Customer sentiment analysis** — cross-competitor themes, recurring praise and complaints, notable quotes
-10. **Cross-competitor patterns and findings** — using the finding template
-11. **Opportunities and recommendations** — actionable insights for the PO/designer based on gaps, weaknesses, and unmet customer needs
-12. **Unknowns and gaps** — using the unknown template
-13. **Source index** — complete list of all sources consulted, organized by competitor
+9. **Pricing comparison** — cross-competitor pricing table. When the domain has per-usage or per-dimension pricing, include a breakdown table with those dimensions (adapted to the domain — not just headline rates). Follow with 1-2 paragraphs of narrative analysis on pricing strategy differences.
+10. **Customer sentiment analysis** — cross-competitor themes, recurring praise and complaints, notable quotes with source attribution
+11. **Cross-competitor patterns and findings** — using the finding template
+12. **Thematic analysis** — 3-5 thematic deep dives organized by analytical theme, not by competitor. Each theme compares all competitors side by side in 2-4 paragraphs of narrative prose with inline citations. Use the thematic deep dive template. This section is the heart of the strategic analysis — it synthesizes evidence from the per-competitor deep dives into comparative insights a decision-maker can act on.
+13. **Opportunities and recommendations** — actionable insights for the PO/designer based on gaps, weaknesses, and unmet customer needs
+14. **Unknowns and gaps** — using the unknown template
+15. **Source index** — numbered footnote index. Each entry includes its footnote number, source title, date accessed, and full URL. This must match the inline `[N]` footnotes used throughout the report.
+
+Use numbered footnotes `[N]` for inline citations throughout the entire report. Every factual claim, feature matrix cell, and pricing figure should cite its source inline. The footnote index at the end of the report provides the full URLs.
 
 Optionally write `output/sources.md` as a standalone source index.
 
@@ -328,6 +373,24 @@ Positive / Negative / Mixed
 **Why it matters**
 [what this means for a product building in this space]
 ```
+
+## Thematic deep dive template
+
+Use this structure for each thematic analysis section:
+
+```markdown
+### Theme: [Theme Title]
+
+[2-4 paragraphs of comparative analysis across all competitors, with inline footnote citations. Write like an analyst brief — build an argument, cite evidence, draw conclusions. Compare how each competitor's approach to this theme reflects their broader philosophy.]
+
+**Key insight:** [1-2 sentence takeaway that a decision-maker can act on]
+
+**Evidence:**
+- [Source title](url) — [what it shows]
+- [Source title](url) — [what it shows]
+```
+
+Example themes: Architecture and deployment philosophy, Cart dynamics and itemization, Customization and branding psychology, Pricing economics and fee layering, Regional and regulatory positioning.
 
 ## Evidence capture rules
 

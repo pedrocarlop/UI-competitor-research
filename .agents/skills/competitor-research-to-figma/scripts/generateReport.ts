@@ -3,6 +3,11 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import {
   ResearchRun,
+  RegionalAnalysis,
+  ThematicDeepDive,
+  CaseStudy,
+  InlineCitation,
+  CostBreakdown,
   ensureDir,
   logSection,
   requireInput,
@@ -29,17 +34,26 @@ function renderExecutiveSummary(run: ResearchRun): string {
   const lines: string[] = ["## Executive Summary", ""];
   const findings = run.cross_competitor_findings;
 
-  if (findings.recurring_capabilities.length > 0) {
-    lines.push(`- **Key capabilities across competitors:** ${findings.recurring_capabilities.slice(0, 3).join("; ")}`);
+  if (findings.strategic_thesis) {
+    lines.push(findings.strategic_thesis, "");
   }
-  if (findings.recurring_strengths.length > 0) {
-    lines.push(`- **Common strengths:** ${findings.recurring_strengths.slice(0, 2).join("; ")}`);
+
+  if (findings.strategic_narrative) {
+    lines.push(findings.strategic_narrative, "");
+  } else {
+    // Fallback to structured summary when no narrative is available
+    if (findings.recurring_capabilities.length > 0) {
+      lines.push(`- **Key capabilities across competitors:** ${findings.recurring_capabilities.slice(0, 3).join("; ")}`);
+    }
+    if (findings.recurring_strengths.length > 0) {
+      lines.push(`- **Common strengths:** ${findings.recurring_strengths.slice(0, 2).join("; ")}`);
+    }
+    if (findings.recurring_friction_points.length > 0) {
+      lines.push(`- **Recurring friction:** ${findings.recurring_friction_points.slice(0, 2).join("; ")}`);
+    }
+    lines.push(`- **Coverage:** ${findings.coverage_summary}`);
+    lines.push("");
   }
-  if (findings.recurring_friction_points.length > 0) {
-    lines.push(`- **Recurring friction:** ${findings.recurring_friction_points.slice(0, 2).join("; ")}`);
-  }
-  lines.push(`- **Coverage:** ${findings.coverage_summary}`);
-  lines.push("");
   return lines.join("\n");
 }
 
@@ -74,6 +88,54 @@ function renderMarketContext(run: ResearchRun): string {
     }
     lines.push("");
   }
+  return lines.join("\n");
+}
+
+function renderRegionalAnalysis(run: ResearchRun): string {
+  if (!run.market_context?.regional_analyses || run.market_context.regional_analyses.length === 0) {
+    return "";
+  }
+
+  const lines: string[] = ["## Regional Analysis", ""];
+
+  for (const ra of run.market_context.regional_analyses) {
+    lines.push(`### ${ra.locale}`, "");
+    lines.push(ra.market_overview, "");
+
+    if (ra.dominant_local_platforms.length > 0) {
+      lines.push("**Dominant local platforms / services:**");
+      for (const platform of ra.dominant_local_platforms) {
+        lines.push(`- ${platform}`);
+      }
+      lines.push("");
+    }
+
+    if (ra.regulatory_contexts.length > 0) {
+      lines.push("**Regulatory mandates:**");
+      for (const reg of ra.regulatory_contexts) {
+        const date = reg.effective_date ? ` (effective ${reg.effective_date})` : "";
+        lines.push(`- **${reg.regulation_name}**${date} — ${reg.impact_summary}`);
+        lines.push(`  - Affects: ${reg.affected_competitors.join(", ")}`);
+        lines.push(`  - Confidence: ${reg.confidence}`);
+      }
+      lines.push("");
+    }
+
+    if (ra.locale_specific_pricing) {
+      lines.push("**Locale-specific pricing:**", "");
+      lines.push(ra.locale_specific_pricing, "");
+    }
+
+    const coverageEntries = Object.entries(ra.competitor_coverage);
+    if (coverageEntries.length > 0) {
+      lines.push("**Competitor coverage:**");
+      for (const [competitor, coverage] of coverageEntries) {
+        lines.push(`- **${competitor}:** ${coverage}`);
+      }
+      lines.push("");
+    }
+  }
+
   return lines.join("\n");
 }
 
@@ -145,12 +207,22 @@ function renderFeatureMatrix(run: ResearchRun): string {
   for (const sf of matrix.subfeatures) {
     const cells = competitors.map((c) => {
       const support = sf.support_by_competitor[c] ?? "unknown";
+      let label: string;
       switch (support) {
-        case "supported": return "Yes";
-        case "partial": return "Partial";
-        case "not_supported": return "No";
-        default: return "?";
+        case "supported": label = "Yes"; break;
+        case "partial": label = "Partial"; break;
+        case "not_supported": label = "No"; break;
+        default: label = "?";
       }
+      const constraint = sf.constraints_by_competitor?.[c];
+      if (constraint) {
+        label += ` — ${constraint}`;
+      }
+      const citation = sf.citation_by_competitor?.[c];
+      if (citation !== undefined) {
+        label += ` [${citation}]`;
+      }
+      return label;
     });
     lines.push(`| ${sf.subfeature_name} | ${cells.join(" | ")} |`);
   }
@@ -208,6 +280,17 @@ function renderCompetitorDeepDive(
       lines.push("");
     }
 
+    // Case studies
+    if (capture.case_studies && capture.case_studies.length > 0) {
+      lines.push("#### Case Studies", "");
+      for (const cs of capture.case_studies) {
+        const outcome = cs.outcome ? ` — ${cs.outcome}` : "";
+        lines.push(`- **${cs.company_name}**: ${cs.use_case}${outcome}`);
+        lines.push(`  - Source: ${cs.source_url} (${cs.source_type})`);
+      }
+      lines.push("");
+    }
+
     // Pricing
     if (capture.pricing) {
       lines.push("#### Pricing", "");
@@ -220,6 +303,28 @@ function renderCompetitorDeepDive(
         }
       }
       lines.push(`- Enterprise: ${capture.pricing.enterprise_available ? "Yes" : "No"}`);
+
+      // Cost breakdowns
+      if (capture.pricing.cost_breakdowns && capture.pricing.cost_breakdowns.length > 0) {
+        lines.push("", "**Cost breakdown:**", "");
+        lines.push("| Cost dimension | Rate | Conditions |");
+        lines.push("|---|---|---|");
+        for (const cb of capture.pricing.cost_breakdowns) {
+          lines.push(`| ${cb.cost_dimension} | ${cb.rate} | ${cb.conditions ?? "—"} |`);
+        }
+      }
+      if (capture.pricing.operational_fees && capture.pricing.operational_fees.length > 0) {
+        lines.push("", "**Operational fees:**");
+        for (const fee of capture.pricing.operational_fees) {
+          lines.push(`- ${fee}`);
+        }
+      }
+      if (capture.pricing.notable_strategies && capture.pricing.notable_strategies.length > 0) {
+        lines.push("", "**Notable pricing strategies:**");
+        for (const strategy of capture.pricing.notable_strategies) {
+          lines.push(`- ${strategy}`);
+        }
+      }
       lines.push("");
     }
 
@@ -295,6 +400,46 @@ function renderCrossCompetitorFindings(run: ResearchRun): string {
   return lines.join("\n");
 }
 
+function renderThematicDeepDives(run: ResearchRun): string {
+  const dives = run.cross_competitor_findings.thematic_deep_dives;
+  if (!dives || dives.length === 0) {
+    return "";
+  }
+
+  const lines: string[] = ["## Thematic Analysis", ""];
+
+  for (const dive of dives) {
+    lines.push(`### Theme: ${dive.theme_title}`, "");
+    lines.push(dive.narrative, "");
+    lines.push(`**Key insight:** ${dive.key_insight}`, "");
+
+    if (dive.evidence_urls.length > 0) {
+      lines.push("**Evidence:**");
+      for (const url of dive.evidence_urls) {
+        lines.push(`- ${url}`);
+      }
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function renderFootnoteIndex(run: ResearchRun): string {
+  if (!run.citations || run.citations.length === 0) {
+    return "";
+  }
+
+  const lines: string[] = ["## Source Index", ""];
+  const sorted = [...run.citations].sort((a, b) => a.ref_number - b.ref_number);
+  for (const cite of sorted) {
+    const date = cite.accessed_date ? `, accessed on ${cite.accessed_date}` : "";
+    lines.push(`${cite.ref_number}. ${cite.title}${date}. ${cite.url}`);
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
 function renderSourceIndex(run: ResearchRun): string {
   const lines: string[] = ["## Source Index", ""];
   for (const capture of run.captures) {
@@ -321,13 +466,17 @@ export function generateMarkdownReport(run: ResearchRun, outputDir?: string): st
     "",
     renderExecutiveSummary(run),
     renderMarketContext(run),
+    renderRegionalAnalysis(run),
     renderGoalAndScope(run),
     renderCompetitorsCovered(run),
     renderMethodology(run),
     renderFeatureMatrix(run),
     renderCompetitorDeepDive(run, outputAssetsDir),
     renderCrossCompetitorFindings(run),
-    renderSourceIndex(run),
+    renderThematicDeepDives(run),
+    run.citations && run.citations.length > 0
+      ? renderFootnoteIndex(run)
+      : renderSourceIndex(run),
   ];
 
   const report = sections.filter(Boolean).join("\n");

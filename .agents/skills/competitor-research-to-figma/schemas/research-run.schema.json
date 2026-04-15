@@ -126,6 +126,12 @@
     "market_context": {
       "$ref": "#/$defs/marketContext"
     },
+    "citations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/inlineCitation"
+      }
+    },
     "warnings": {
       "type": "array",
       "items": {
@@ -290,6 +296,18 @@
         },
         "pricing": {
           "$ref": "#/$defs/competitorPricing"
+        },
+        "case_studies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/caseStudy"
+          }
+        },
+        "developer_discourse": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/developerDiscourseEntry"
+          }
         }
       }
     },
@@ -470,6 +488,18 @@
           "items": {
             "type": "string"
           }
+        },
+        "strategic_thesis": {
+          "type": "string"
+        },
+        "strategic_narrative": {
+          "type": "string"
+        },
+        "thematic_deep_dives": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/thematicDeepDive"
+          }
         }
       }
     },
@@ -567,7 +597,7 @@
       "required": ["source_url", "source_type", "source_name", "sentiment", "quote_or_paraphrase", "theme"],
       "properties": {
         "source_url": { "type": "string" },
-        "source_type": { "type": "string", "enum": ["app_store", "review_platform", "reddit", "forum", "social", "other"] },
+        "source_type": { "type": "string", "enum": ["app_store", "review_platform", "reddit", "forum", "social", "developer_community", "case_study", "news", "other"] },
         "source_name": { "type": "string" },
         "date": { "type": "string" },
         "sentiment": { "type": "string", "enum": ["positive", "negative", "mixed", "neutral"] },
@@ -588,7 +618,10 @@
         "pricing_page_url": { "type": "string" },
         "screenshot_path": { "type": "string" },
         "notes": { "type": "array", "items": { "type": "string" } },
-        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "cost_breakdowns": { "type": "array", "items": { "$ref": "#/$defs/costBreakdown" } },
+        "operational_fees": { "type": "array", "items": { "type": "string" } },
+        "notable_strategies": { "type": "array", "items": { "type": "string" } }
       }
     },
     "pricingTier": {
@@ -619,6 +652,9 @@
         "subfeature_name": { "type": "string" },
         "description": { "type": "string" },
         "support_by_competitor": { "type": "object", "additionalProperties": { "type": "string", "enum": ["supported", "partial", "not_supported", "unknown"] } },
+        "detail_by_competitor": { "type": "object", "additionalProperties": { "type": "string" } },
+        "citation_by_competitor": { "type": "object", "additionalProperties": { "type": "integer" } },
+        "constraints_by_competitor": { "type": "object", "additionalProperties": { "type": "string" } },
         "best_implementation": { "type": "string" },
         "notes": { "type": "string" }
       }
@@ -632,7 +668,89 @@
         "key_trends": { "type": "array", "items": { "type": "string" } },
         "recent_events": { "type": "array", "items": { "type": "string" } },
         "regulatory_notes": { "type": "array", "items": { "type": "string" } },
-        "sources": { "type": "array", "items": { "type": "object", "properties": { "title": { "type": "string" }, "url": { "type": "string" } } } }
+        "sources": { "type": "array", "items": { "type": "object", "properties": { "title": { "type": "string" }, "url": { "type": "string" } } } },
+        "regional_analyses": { "type": "array", "items": { "$ref": "#/$defs/regionalAnalysis" } }
+      }
+    },
+    "inlineCitation": {
+      "type": "object",
+      "required": ["ref_number", "title", "url"],
+      "properties": {
+        "ref_number": { "type": "integer" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "accessed_date": { "type": "string" }
+      }
+    },
+    "thematicDeepDive": {
+      "type": "object",
+      "required": ["theme_title", "narrative", "competitors_compared", "key_insight", "evidence_urls"],
+      "properties": {
+        "theme_title": { "type": "string" },
+        "narrative": { "type": "string" },
+        "competitors_compared": { "type": "array", "items": { "type": "string" } },
+        "key_insight": { "type": "string" },
+        "evidence_urls": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "caseStudy": {
+      "type": "object",
+      "required": ["company_name", "use_case", "competitor_used", "source_url", "source_type", "confidence"],
+      "properties": {
+        "company_name": { "type": "string" },
+        "use_case": { "type": "string" },
+        "competitor_used": { "type": "string" },
+        "outcome": { "type": "string" },
+        "source_url": { "type": "string" },
+        "source_type": { "type": "string", "enum": ["case_study_page", "blog_post", "press_release", "community_post", "news_article"] },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "developerDiscourseEntry": {
+      "type": "object",
+      "required": ["source_url", "source_name", "topic", "sentiment", "key_point"],
+      "properties": {
+        "source_url": { "type": "string" },
+        "source_name": { "type": "string" },
+        "topic": { "type": "string" },
+        "sentiment": { "type": "string", "enum": ["positive", "negative", "mixed", "neutral"] },
+        "key_point": { "type": "string" },
+        "date": { "type": "string" }
+      }
+    },
+    "costBreakdown": {
+      "type": "object",
+      "required": ["cost_dimension", "rate"],
+      "properties": {
+        "cost_dimension": { "type": "string" },
+        "rate": { "type": "string" },
+        "conditions": { "type": "string" }
+      }
+    },
+    "regulatoryContext": {
+      "type": "object",
+      "required": ["jurisdiction", "regulation_name", "impact_summary", "affected_competitors", "evidence_url", "confidence"],
+      "properties": {
+        "jurisdiction": { "type": "string" },
+        "regulation_name": { "type": "string" },
+        "effective_date": { "type": "string" },
+        "impact_summary": { "type": "string" },
+        "affected_competitors": { "type": "array", "items": { "type": "string" } },
+        "evidence_url": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "regionalAnalysis": {
+      "type": "object",
+      "required": ["locale", "market_overview", "dominant_payment_methods", "regulatory_contexts", "competitor_coverage", "evidence_urls"],
+      "properties": {
+        "locale": { "type": "string" },
+        "market_overview": { "type": "string" },
+        "dominant_local_platforms": { "type": "array", "items": { "type": "string" } },
+        "regulatory_contexts": { "type": "array", "items": { "$ref": "#/$defs/regulatoryContext" } },
+        "locale_specific_pricing": { "type": "string" },
+        "competitor_coverage": { "type": "object", "additionalProperties": { "type": "string" } },
+        "evidence_urls": { "type": "array", "items": { "type": "string" } }
       }
     }
   }
