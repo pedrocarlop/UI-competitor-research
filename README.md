@@ -131,7 +131,7 @@ The markdown report includes:
 12. **Unknowns and gaps**
 13. **Source index**
 
-No Figma export is required. The output is self-contained markdown that works in any review workflow. Figma export is available as an optional add-on.
+No Figma export is required. The output is self-contained markdown that works in any review workflow (in Antigravity, the output is rendered directly as a rich, interactive Markdown Artifact alongside captured native WebP browser recordings). Figma export is available as an optional add-on.
 
 ---
 

@@ -46,19 +46,19 @@ This skill uses model routing to delegate data-gathering steps to faster, cheape
 
 Subagent model tiers range from high-reasoning to minimal, matched to task complexity:
 
-| Step | Role | Claude Code | Codex | Why |
-|------|------|-------------|-------|-----|
-| 1. Define question | Orchestrator | opus (main) | gpt-5.4 (main) | Interactive, needs conversation context |
-| 2. Market context | **Subagent** | sonnet | gpt-5.4 / medium | Evaluating and synthesizing market trends |
-| 3. Discover competitors | **Subagent** | sonnet | gpt-5.4 / medium | Evaluating relevance across many candidates |
-| 4. Build source map | **Subagent** | haiku | gpt-5.4-mini / low | Systematic URL enumeration |
-| 5. Feature matrix | Orchestrator | opus (main) | gpt-5.4 (main) | High synthesis, cross-referencing many sources |
-| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.4 / medium | Per-competitor data gathering, needs judgment |
-| 9. Analysis & synthesis | Orchestrator | opus (main) | gpt-5.4 (main) | Core strategic reasoning |
-| 9b. Strategic thesis | Orchestrator | opus (main) | gpt-5.4 (main) | Highest reasoning required |
-| 10. Unknowns | **Subagent** | haiku | gpt-5.4-mini / low | Systematic gap documentation |
-| 11. Report | Orchestrator | opus (main) | gpt-5.4 (main) | Final prose quality matters |
-| 12. Figma export | **Subagent** | haiku | gpt-5.4-mini / low | Mechanical tool invocation |
+| Step | Role | Claude Code | Codex | Antigravity | Why |
+|------|------|-------------|-------|-------------|-----|
+| 1. Define question | Orchestrator | opus (main) | gpt-5.4 (main) | Main Orchestrator | Interactive, needs conversation context |
+| 2. Market context | **Subagent/Tool** | sonnet | gpt-5.4 / medium | `search_web` Tool | Evaluating and synthesizing market trends |
+| 3. Discover competitors | **Subagent/Tool** | sonnet | gpt-5.4 / medium | `search_web` Tool | Evaluating relevance across many candidates |
+| 4. Build source map | **Subagent/Tool** | haiku | gpt-5.4-mini / low | `read_url_content` Tool | Systematic URL enumeration |
+| 5. Feature matrix | Orchestrator | opus (main) | gpt-5.4 (main) | Main Orchestrator | High synthesis, cross-referencing many sources |
+| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.4 / medium | `browser_subagent` Tool | Per-competitor data gathering, needs judgment |
+| 9. Analysis & synthesis | Orchestrator | opus (main) | gpt-5.4 (main) | Main Orchestrator | Core strategic reasoning |
+| 9b. Strategic thesis | Orchestrator | opus (main) | gpt-5.4 (main) | Main Orchestrator | Highest reasoning required |
+| 10. Unknowns | **Subagent/Tool** | haiku | gpt-5.4-mini / low | Main Orchestrator (Artifacting) | Systematic gap documentation |
+| 11. Report | Orchestrator | opus (main) | gpt-5.4 (main) | Native Artifacts | Final prose quality matters |
+| 12. Figma export | **Subagent** | haiku | gpt-5.4-mini / low | Not natively supported | Mechanical tool invocation |
 
 Steps 6, 7, and 8 are merged into a **single subagent per competitor** to reduce spawn overhead. One subagent handles evidence capture, pricing analysis, and sentiment gathering for its assigned competitor.
 
@@ -90,11 +90,15 @@ Available agent definitions:
 
 #### Antigravity
 
-Antigravity does not support subagent spawning. Execute all steps directly on the main model.
+Antigravity utilizes specialized native tools instead of generic thinking subagents:
+- Use the `search_web` tool concurrently for Market Context and Competitor Discovery.
+- Use the `read_url_content` tool concurrently for building the Source Map.
+- Use the `browser_subagent` tool concurrently for gathering specific Competitor Evidence, Pricing, and Sentiment. Configure the `Task` prompt to explicitly instruct the subagent to extract the required JSON data payloads. Provide a descriptive `RecordingName` to automatically capture the browser session as a WebP video.
+- Use the `write_to_file` tool with `IsArtifact: true` to output the final `research.md` (using carousels to embed WebP recordings and screenshots) directly to the user's workspace.
 
 ### Fallback behavior
 
-Model routing is an optimization, not a requirement. The skill must produce identical output regardless of whether routing is used.
+Model routing and specialized native tools are an optimization, not a requirement. The skill must produce identical output regardless of whether routing is used.
 
 - If the platform does not support subagent spawning, execute all steps on the main model.
 - If a subagent fails or returns incomplete results: log the failure as a warning, re-execute the step on the main model, and continue the workflow.
@@ -385,7 +389,7 @@ Delegate this step to a fast/cheap subagent.
 
 ### 11. Produce the markdown report
 
-Write `output/research.md` with these sections:
+Write `output/research.md` with these sections (for Antigravity, use `write_to_file` with `IsArtifact: true` to generate a rich markdown viewer):
 
 1. **Executive summary** — Open with a 1-2 sentence strategic thesis that captures the fundamental competitive dynamic. Follow with 3-5 key insights that support, nuance, or qualify the thesis. Write in narrative prose with inline citations, not as a bullet list. This is the "if you read one section" summary that a decision-maker can act on.
 2. **Market landscape** — industry context, segments, trends, recent events, with source citations
@@ -554,9 +558,9 @@ Example themes: Architecture and deployment philosophy, Cart dynamics and itemiz
 - Full-page screenshots for homepage, pricing, and key feature pages
 - Focused screenshots for specific UI patterns, sections, or evidence points
 - Crops where necessary to highlight a pattern
-- Consistent naming: `{competitor}-{source}-{topic}.png`
-- Every image must have a source URL and context note
-- Save all images to `output/assets/`
+- Consistent naming: `{competitor}-{source}-{topic}.png` (Note: for Antigravity, native WebP recordings are automatically saved to the artifacts directory and should be embedded instead of static PNGs)
+- Every image or recording must have a source URL and context note
+- Save all images to `output/assets/` (For Antigravity, reference the captured WebP artifacts)
 
 ## Analysis rules
 
