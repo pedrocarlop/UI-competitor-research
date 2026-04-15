@@ -203,8 +203,8 @@ That's it. No Figma file, no competitor accounts, no API keys required for the d
 
 ```bash
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo pedrocarlop/competitor-research \
-  --path .agents/skills/competitor-research
+  --repo pedrocarlop/UI-competitor-research \
+  --path .agents/skills/competitor-research-to-figma
 ```
 
 Then close and reopen Codex.
@@ -212,9 +212,9 @@ Then close and reopen Codex.
 ### For Claude Code
 
 ```bash
-git clone https://github.com/pedrocarlop/competitor-research.git /tmp/competitor-research && \
-bash /tmp/competitor-research/scripts/install-skill-claude.sh && \
-rm -rf /tmp/competitor-research
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-claude.sh && \
+rm -rf /tmp/UI-competitor-research
 ```
 
 Then restart Claude Code.
@@ -222,9 +222,9 @@ Then restart Claude Code.
 ### For Antigravity
 
 ```bash
-git clone https://github.com/pedrocarlop/competitor-research.git /tmp/competitor-research && \
-bash /tmp/competitor-research/scripts/install-skill-antigravity.sh && \
-rm -rf /tmp/competitor-research
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-antigravity.sh && \
+rm -rf /tmp/UI-competitor-research
 ```
 
 Then restart Antigravity.
@@ -236,28 +236,28 @@ Then restart Antigravity.
 ### Update in Codex
 
 ```bash
-rm -rf ~/.codex/skills/competitor-research && \
+rm -rf ~/.codex/skills/competitor-research-to-figma && \
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo pedrocarlop/competitor-research \
-  --path .agents/skills/competitor-research
+  --repo pedrocarlop/UI-competitor-research \
+  --path .agents/skills/competitor-research-to-figma
 ```
 
 ### Update in Claude Code
 
 ```bash
-rm -f ~/.claude/commands/competitor-research.md && \
-git clone https://github.com/pedrocarlop/competitor-research.git /tmp/competitor-research && \
-bash /tmp/competitor-research/scripts/install-skill-claude.sh && \
-rm -rf /tmp/competitor-research
+rm -f ~/.claude/commands/competitor-research-to-figma.md && \
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-claude.sh && \
+rm -rf /tmp/UI-competitor-research
 ```
 
 ### Update in Antigravity
 
 ```bash
-rm -rf ~/.antigravity/skills/competitor-research && \
-git clone https://github.com/pedrocarlop/competitor-research.git /tmp/competitor-research && \
-bash /tmp/competitor-research/scripts/install-skill-antigravity.sh && \
-rm -rf /tmp/competitor-research
+rm -rf ~/.antigravity/skills/competitor-research-to-figma && \
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
+bash /tmp/UI-competitor-research/scripts/install-skill-antigravity.sh && \
+rm -rf /tmp/UI-competitor-research
 ```
 
 ---
