@@ -38,7 +38,88 @@ If the research question is missing, ask for it first. Do not proceed without it
 - `output_path` — where to write the report (defaults to `./output/`)
 - `figma_destination_url` — Figma file URL for optional visual export
 
+## Model routing
+
+This skill uses model routing to delegate data-gathering steps to faster, cheaper models while keeping strategic analysis and final prose on the main orchestrator model.
+
+### Routing table
+
+Subagent model tiers range from high-reasoning to minimal, matched to task complexity:
+
+| Step | Role | Claude Code | Codex | Why |
+|------|------|-------------|-------|-----|
+| 1. Define question | Orchestrator | opus (main) | gpt-5.4 (main) | Interactive, needs conversation context |
+| 2. Market context | **Subagent** | sonnet | gpt-5.4 / medium | Evaluating and synthesizing market trends |
+| 3. Discover competitors | **Subagent** | sonnet | gpt-5.4 / medium | Evaluating relevance across many candidates |
+| 4. Build source map | **Subagent** | haiku | gpt-5.4-mini / low | Systematic URL enumeration |
+| 5. Feature matrix | Orchestrator | opus (main) | gpt-5.4 (main) | High synthesis, cross-referencing many sources |
+| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.4-mini / high | Per-competitor data gathering, needs judgment |
+| 9. Analysis & synthesis | Orchestrator | opus (main) | gpt-5.4 (main) | Core strategic reasoning |
+| 9b. Strategic thesis | Orchestrator | opus (main) | gpt-5.4 (main) | Highest reasoning required |
+| 10. Unknowns | **Subagent** | haiku | gpt-5.4-mini / low | Systematic gap documentation |
+| 11. Report | Orchestrator | opus (main) | gpt-5.4 (main) | Final prose quality matters |
+| 12. Figma export | **Subagent** | haiku | gpt-5.4-mini / low | Mechanical tool invocation |
+
+Steps 6, 7, and 8 are merged into a **single subagent per competitor** to reduce spawn overhead. One subagent handles evidence capture, pricing analysis, and sentiment gathering for its assigned competitor.
+
+### Parallelization
+
+- **Steps 2 + 3:** Spawn market context and competitor discovery subagents concurrently. Wait for both before proceeding to step 4.
+- **Steps 6+7+8:** Spawn one combined subagent per competitor concurrently (up to all competitors in parallel). Collect all results before proceeding to step 9.
+
+### Platform-specific spawn mechanics
+
+#### Claude Code
+
+Use the `Agent` tool with a `model` parameter matched to the routing table. Use `model: "sonnet"` for steps requiring judgment (2, 3, 6+7+8) and `model: "haiku"` for mechanical steps (4, 10, 12). Multiple `Agent` calls in a single message run concurrently:
+
+```
+Agent(model="sonnet", prompt="<subagent prompt for steps needing judgment>")
+Agent(model="haiku", prompt="<subagent prompt for mechanical steps>")
+```
+
+#### Codex (OpenAI)
+
+Use custom agent TOML files in `.codex/agents/`. Each TOML defines a subagent role with a model and reasoning effort tier matched to task complexity. Spawn subagents by name in natural language (e.g., "Spawn an evidence-gatherer agent for each competitor"). Parallelism is controlled by `[agents] max_threads` in `config.toml` (default 6).
+
+Available agent definitions:
+- `market-researcher` — steps 2+3 (market context + discovery) — `gpt-5.4` / medium effort
+- `source-mapper` — step 4 (source map) — `gpt-5.4-mini` / low effort
+- `evidence-gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.4-mini` / high effort
+- `gap-documenter` — step 10 (unknowns) — `gpt-5.4-mini` / low effort
+
+#### Antigravity
+
+If the `spawn-agent` skill is installed (`~/.gemini/antigravity/skills/spawn-agent`), delegate via:
+
+```bash
+./scripts/spawn-agent.sh --gemini --yolo -p "<subagent prompt with inputs>"
+```
+
+Otherwise, execute all steps directly on the main model.
+
+### Fallback behavior
+
+Model routing is an optimization, not a requirement. The skill must produce identical output regardless of whether routing is used.
+
+- If the platform does not support subagent spawning, execute all steps on the main model.
+- If a subagent fails or returns incomplete results: log the failure as a warning, re-execute the step on the main model, and continue the workflow.
+
 ## Ordered procedure
+
+When model routing is active (see above), the execution flow is:
+
+1. **Step 1** on orchestrator (interactive)
+2. **Steps 2 + 3** on subagents concurrently → wait for both
+3. **Step 4** on subagent → wait
+4. **Step 5** on orchestrator (needs all prior results)
+5. **Steps 6+7+8** on subagents concurrently (one per competitor) → wait for all
+6. **Steps 9, 9b** on orchestrator (strategic analysis)
+7. **Step 10** on subagent → wait
+8. **Step 11** on orchestrator (final report prose)
+9. **Step 12** on subagent (if Figma URL provided)
+
+When model routing is not available, execute all steps sequentially on the main model as before.
 
 ### 1. Define the research question and scope
 
@@ -57,7 +138,22 @@ Before diving into individual competitors, build a landscape view:
 - Identify notable industry standards, regulations, or compliance considerations
 - Record 3-5 key trends shaping the space
 
-Produce a brief "Market Landscape" section for the report.
+When a `locale` is provided, or when the research question mentions a specific region or country, conduct locale-specific research:
+- Search for dominant local platforms, services, or alternatives relevant to the feature domain (e.g., for payments: Bizum in Spain, iDEAL in Netherlands; for messaging: KakaoTalk in Korea, WeChat in China; for e-commerce: Mercado Libre in Latin America)
+- Search for relevant regulatory mandates affecting the feature domain in that jurisdiction (e.g., tax reporting requirements, data residency laws, industry-specific compliance mandates)
+- Search for each competitor's availability, localization quality, and regional pricing in that market
+- Record regional pricing structures if they differ from the global default
+- Note market share data for local vs. global platforms or services in the feature domain
+
+Produce a "Market Landscape" section for the report. When locale-specific research was conducted, also produce a "Regional Analysis" section.
+
+#### Subagent delegation (step 2)
+
+Delegate this step to a fast/cheap subagent. Spawn concurrently with step 3.
+
+- **Input:** `research_question`, `locale` (optional)
+- **Output:** Markdown containing a "## Market Landscape" section (with subsections for segments, trends, events, sources) and optionally a "## Regional Analysis" section. All claims must include source URLs.
+- **Subagent prompt:** "You are a market research analyst. Research the market landscape for the following domain: {research_question}. Search the web for recent market overviews, key segments, trends, funding rounds, and regulatory considerations. If locale is provided ({locale}), also research dominant local platforms, regulatory mandates, and regional pricing dynamics. Produce two markdown sections: '## Market Landscape' and (if locale applies) '## Regional Analysis'. Cite every claim with its source URL. Be thorough but concise."
 
 ### 3. Discover competitors dynamically
 
@@ -78,6 +174,14 @@ If the user provides a `competitors` list, use it directly and skip discovery.
 
 Prefer competitors with mature, publicly documented products. Avoid selecting the user's own company when `company_name` is provided.
 
+#### Subagent delegation (step 3)
+
+Delegate this step to a fast/cheap subagent. Spawn concurrently with step 2.
+
+- **Input:** `research_question`, `company_name` (optional, to exclude), `competitors` (optional, if provided skip discovery)
+- **Output:** JSON array of objects: `[{"competitor_name": "...", "product_url": "...", "reason": "...", "confidence": "high|medium|low"}]` (5-10 entries)
+- **Subagent prompt:** "You are a competitive intelligence researcher. Find 5-10 relevant competitors for: {research_question}. Search the web for '[topic] competitors [current year]', 'best [category] tools', 'alternatives to [known product]'. Search G2, Capterra, and TrustRadius category pages. Exclude {company_name} if provided. For each competitor, return: competitor_name, product_url, reason for inclusion, and confidence level (high/medium/low). Prefer competitors with mature, publicly documented products. Return results as a JSON array."
+
 ### 4. Build a source map
 
 For each competitor, identify which public sources are available and relevant:
@@ -96,16 +200,30 @@ For each competitor, identify which public sources are available and relevant:
 
 Record the source map before starting evidence collection.
 
+#### Subagent delegation (step 4)
+
+Delegate this step to a fast/cheap subagent.
+
+- **Input:** `research_question`, competitor list (names + product URLs from step 3)
+- **Output:** JSON object mapping each competitor name to an array of `{"source_type": "...", "url": "...", "notes": "..."}` objects
+- **Subagent prompt:** "You are mapping public sources for competitive research on: {research_question}. For each competitor below, identify which public sources are available and relevant: company website, feature pages, pricing pages, help centers, changelogs, app store pages, YouTube demos, review pages, etc. Visit each competitor's product URL to find these pages. Return a JSON object mapping each competitor name to an array of {source_type, url, notes} objects. Competitors: {competitor_list_json}"
+
 ### 5. Identify subfeatures and build feature matrix
 
 For the target feature, identify all subfeatures and capabilities mentioned across competitors:
 - Scan feature pages, help center articles, changelogs, and comparison pages
-- List every distinct subfeature or capability (e.g., for "payment links": branding customization, expiration dates, partial payments, analytics, webhooks, multi-currency, QR codes)
+- List every distinct subfeature or capability (e.g., for "payment links": branding customization, expiration dates, partial payments, analytics, webhooks, multi-currency, QR codes; for "user onboarding": step sequencing, progress indicators, email triggers, SSO, localization, in-app guidance; for "search": filters, autocomplete, ranking controls, analytics, personalization)
 - Build a feature matrix: rows = subfeatures, columns = competitors
 - For each cell: supported / partially supported / not supported / unknown
 - Identify table-stakes features (supported by most or all competitors)
 - Identify differentiators (supported by few competitors)
 - Note which competitor has the best implementation of each subfeature and why
+
+For each subfeature, go beyond binary support status. Document:
+- Specific constraints or limits (e.g., "maximum 20 items per bundle", "capped at $10,000 per link")
+- How the implementation qualitatively differs between competitors (e.g., "Stripe supports adjustable quantities; Square uses rigid one-to-one links")
+- Which public source confirms the support level (for inline citation)
+- Whether the feature requires a specific tier, plan, or add-on to access
 
 ### 6. Collect evidence and capture flows
 
@@ -124,6 +242,37 @@ Where possible, reconstruct task flows and user journeys from:
 - App store screenshot sequences
 - Feature page descriptions and diagrams
 
+For each competitor, also search for:
+- **Case studies and customer stories:** Search `[competitor] case study [feature]`, `[competitor] customer story`, `[competitor] used by [company]`. Record any named customer examples with their use case and measurable outcomes (e.g., "OpenAI used Stripe Payment Links for ChatGPT Plus subscriptions", "MemberPress reported 30% conversion lift after integrating Stripe Link").
+- **Developer community discourse:** Search `[competitor] [feature] site:stackoverflow.com`, `[competitor] [feature] site:github.com`, `[competitor] site:news.ycombinator.com`. These provide technical depth and candid assessments that marketing pages and review platforms miss.
+- **News and press coverage:** Search for recent articles about product launches, partnerships, or notable deployments related to the feature.
+
+#### Subagent delegation (steps 6+7+8 combined — per competitor)
+
+Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one subagent per competitor concurrently. Each subagent handles evidence capture, pricing analysis, and sentiment gathering for its assigned competitor.
+
+- **Input:** `competitor_name`, `product_url`, `source_map` (from step 4), `research_question`, `subfeature_list` (from step 5), `locale` (optional), `output_assets_path`
+- **Output:** A structured JSON bundle containing:
+  - `screenshots[]` — array of `{"path": "...", "source_url": "...", "context_note": "..."}` saved to `output/assets/`
+  - `pricing` — `{"pricing_model": "...", "tiers": [...], "cost_breakdowns": [...], "operational_fees": [...], "notable_strategies": [...], "enterprise_available": bool, "confidence": "..."}`
+  - `sentiment` — `{"overall_direction": "...", "top_praised": [...], "top_criticized": [...], "notable_quotes": [...], "sources": [...]}`
+  - `case_studies[]` — `[{"company_name": "...", "use_case": "...", "outcome": "...", "source_url": "...", "source_type": "..."}]`
+  - `evidence_notes[]` — raw observations about the competitor's implementation, strengths, weaknesses
+  - `flow_reconstruction[]` — step-by-step task flow with screenshot references
+- **Subagent prompt:** "You are a competitive intelligence researcher focused on a single competitor. Gather comprehensive public evidence for {competitor_name} ({product_url}) regarding: {research_question}.
+
+  YOUR TASKS:
+  1. EVIDENCE CAPTURE: Visit the sources listed in the source map below. Capture screenshots of key pages (homepage, pricing, feature pages, help center). Record source URLs and context notes. Save screenshots to {output_assets_path} using naming: {competitor_slug}-{source}-{topic}.png. Reconstruct task flows from help center guides, YouTube demos, or app store screenshots. Search for case studies, developer discourse (Stack Overflow, GitHub, Hacker News), and news coverage.
+  2. PRICING ANALYSIS: Visit the pricing page. Record tier names, prices, billing frequency, currency. Classify the pricing model. Note per-usage breakdowns, operational fees, add-on costs, and notable strategies. {locale_pricing_instruction}
+  3. SENTIMENT: Search G2, Capterra, App Store, Google Play, Reddit, Stack Overflow, GitHub, and Hacker News for reviews and discussions about {competitor_name} and {research_question}. Record overall rating, sentiment direction, top praised/criticized aspects, and notable quotes with source URLs.
+
+  For each subfeature in the list below, note whether {competitor_name} supports it (supported/partial/not_supported/unknown) with evidence.
+
+  SOURCE MAP: {source_map_json}
+  SUBFEATURES: {subfeature_list_json}
+
+  Return your findings as a single JSON object with keys: screenshots, pricing, sentiment, case_studies, evidence_notes, flow_reconstruction."
+
 ### 7. Analyze pricing models
 
 For each competitor with a public pricing page:
@@ -135,7 +284,15 @@ For each competitor with a public pricing page:
 - Classify the pricing model: usage-based, seat-based, flat-rate, freemium, custom, hybrid
 - Note any notable pricing strategies (e.g., reverse trial, volume discounts, startup programs)
 
-Produce a pricing comparison table in the report.
+For each competitor, also research:
+- Pricing breakdowns by usage dimension, tier, or transaction type that applies to the feature domain (e.g., for payments: per-method rates; for APIs: per-call tiers; for SaaS: per-seat or per-workspace; for marketplaces: per-transaction or percentage fees)
+- Overage, penalty, or operational fees beyond the headline rate (e.g., dispute fees for payments, overage fees for API rate limits, seat overages for SaaS)
+- Hidden or add-on costs that unlock key capabilities (e.g., custom domain fees, branding unlock fees, export fees, premium integrations)
+- Notable pricing strategies or developer/community critiques (e.g., layered SaaS add-on fees, "Indie Tax" dynamics, feature-gating criticism)
+
+When a `locale` is specified, also research regional pricing differences. Note whether competitors charge different rates or have different tiers for that market, and whether any locally dominant platforms in that domain affect the competitive pricing dynamic.
+
+Produce a pricing comparison table in the report. When the domain has meaningful per-usage or per-dimension breakdowns, include those — not just the headline rate. Follow the table with narrative analysis of pricing strategy differences.
 
 If pricing is gated behind a sales call or not publicly available, record this as an unknown with confidence level.
 
@@ -146,6 +303,7 @@ For each competitor, search for and collect customer feedback:
 - **Review platforms**: Search G2, Capterra, TrustRadius for the product. Note overall score, number of reviews, and top praised/criticized aspects.
 - **Reddit discussions**: Search Reddit for "[product name] [feature]" threads. Note common complaints, praise, and feature requests.
 - **Forum and community mentions**: Search for community discussions, Stack Overflow questions, or product-specific forums.
+- **Developer community**: Search Stack Overflow for technical questions and pain points, GitHub Issues/Discussions for bug reports and feature requests, and Hacker News for candid industry commentary. Developer sentiment often reveals architectural limitations and operational friction that review platforms miss.
 
 For each source, record:
 - Source URL
@@ -180,6 +338,19 @@ Review all collected evidence and produce real, specific analysis:
 - What are industry best practices that emerge from the evidence?
 - Where do competitors cluster vs. diverge in their approaches?
 
+**Strategic narrative:**
+Write a strategic narrative (3-5 paragraphs) that synthesizes the most important comparative insight. This should read like an analyst brief, not a checklist. Structure it as: thesis statement → supporting evidence across competitors → implications for someone building or evaluating in this space. Every factual claim must have an inline citation using numbered footnotes `[N]`.
+
+### 9b. Build strategic thesis
+
+After completing the analysis, step back and identify the single most important strategic insight:
+
+1. **Identify the fundamental philosophical difference** between the competitors. What operating model, target user, or design philosophy separates them? (e.g., "programmable infrastructure vs. omnichannel POS extension", "developer-first vs. operations-first", "horizontal platform vs. vertical solution")
+2. **Articulate a 1-2 sentence thesis statement** that captures this core competitive dynamic. This becomes the opening line of the executive summary.
+3. **Validate the thesis** against evidence from each competitor — does it explain the feature choices, pricing models, and positioning you observed?
+4. **Identify 3-5 thematic dimensions** where the competitors diverge in interesting ways (e.g., architecture philosophy, cart dynamics, pricing economics, customization depth, regional strategy). These become the thematic analysis sections.
+5. **Write 2-4 paragraphs of narrative synthesis** for each theme, comparing all competitors side by side with inline citations. Each theme should end with a key insight.
+
 For every finding, clearly distinguish:
 - **Observed** — directly seen in the source material
 - **Inferred** — a conclusion drawn from observed evidence (clearly labeled)
@@ -194,30 +365,53 @@ For anything that could not be determined from public evidence:
 - Note what evidence is missing
 - Suggest a next validation step (user interview, authenticated access, sales call, trial signup, etc.)
 
+#### Subagent delegation (step 10)
+
+Delegate this step to a fast/cheap subagent.
+
+- **Input:** `research_question`, feature matrix (from step 5), all per-competitor evidence bundles (from steps 6-8), analysis findings (from step 9)
+- **Output:** Markdown using the Unknown template (see below), listing all identified gaps
+- **Subagent prompt:** "You are documenting research gaps for a competitive intelligence report on: {research_question}. Review the evidence collected and analysis produced below. For anything that could not be determined from public evidence, produce an entry using this template:
+
+  ### Unknown NN
+  **Question** — what remains unclear
+  **Why unresolved** — why public evidence was not enough
+  **Missing evidence** — what could not be found
+  **Next validation step** — how to validate later (user interview, trial signup, sales call, etc.)
+
+  FEATURE MATRIX: {feature_matrix_summary}
+  EVIDENCE GAPS: {evidence_gaps_summary}
+  ANALYSIS FINDINGS: {analysis_findings_summary}"
+
 ### 11. Produce the markdown report
 
 Write `output/research.md` with these sections:
 
-1. **Executive summary** — 3-5 key takeaways a PO or designer should know immediately
-2. **Market landscape** — industry context, segments, trends, recent events
-3. **Research goal and scope** — what was investigated and why
-4. **Competitors covered** — which competitors, why, and at what confidence level
-5. **Methodology** — how evidence was gathered, which source types, what tools
-6. **Feature matrix** — subfeature comparison table across all competitors
-7. **Per-competitor deep dives** — for each competitor:
+1. **Executive summary** — Open with a 1-2 sentence strategic thesis that captures the fundamental competitive dynamic. Follow with 3-5 key insights that support, nuance, or qualify the thesis. Write in narrative prose with inline citations, not as a bullet list. This is the "if you read one section" summary that a decision-maker can act on.
+2. **Market landscape** — industry context, segments, trends, recent events, with source citations
+3. **Regional analysis** (when applicable) — appears when `locale` is specified or when regional dynamics are material. Includes dominant local platforms or services, regulatory mandates, competitor availability in the market, and locale-specific pricing differences.
+4. **Research goal and scope** — what was investigated and why
+5. **Competitors covered** — which competitors, why, and at what confidence level
+6. **Methodology** — how evidence was gathered, which source types, what tools
+7. **Feature matrix** — subfeature comparison table across all competitors. Each cell should include constraints, limits, and a footnote reference. Go beyond Yes/No — capture nuance (e.g., `Partial — max 20 items, no cross-sells [14]`).
+8. **Per-competitor deep dives** — for each competitor:
    - Overview and positioning
    - Key screenshots with source links
    - Task flows and user journeys
-   - Pricing model summary
-   - Strengths (with evidence)
-   - Weaknesses (with evidence)
+   - Case studies (if any named customer examples were found)
+   - Pricing model summary with per-method fee breakdowns
+   - Strengths (with evidence and inline citations)
+   - Weaknesses (with evidence and inline citations)
    - Customer sentiment summary
-8. **Pricing comparison** — cross-competitor pricing table and analysis
-9. **Customer sentiment analysis** — cross-competitor themes, recurring praise and complaints, notable quotes
-10. **Cross-competitor patterns and findings** — using the finding template
-11. **Opportunities and recommendations** — actionable insights for the PO/designer based on gaps, weaknesses, and unmet customer needs
-12. **Unknowns and gaps** — using the unknown template
-13. **Source index** — complete list of all sources consulted, organized by competitor
+9. **Pricing comparison** — cross-competitor pricing table. When the domain has per-usage or per-dimension pricing, include a breakdown table with those dimensions (adapted to the domain — not just headline rates). Follow with 1-2 paragraphs of narrative analysis on pricing strategy differences.
+10. **Customer sentiment analysis** — cross-competitor themes, recurring praise and complaints, notable quotes with source attribution
+11. **Cross-competitor patterns and findings** — using the finding template
+12. **Thematic analysis** — 3-5 thematic deep dives organized by analytical theme, not by competitor. Each theme compares all competitors side by side in 2-4 paragraphs of narrative prose with inline citations. Use the thematic deep dive template. This section is the heart of the strategic analysis — it synthesizes evidence from the per-competitor deep dives into comparative insights a decision-maker can act on.
+13. **Opportunities and recommendations** — actionable insights for the PO/designer based on gaps, weaknesses, and unmet customer needs
+14. **Unknowns and gaps** — using the unknown template
+15. **Source index** — numbered footnote index. Each entry includes its footnote number, source title, date accessed, and full URL. This must match the inline `[N]` footnotes used throughout the report.
+
+Use numbered footnotes `[N]` for inline citations throughout the entire report. Every factual claim, feature matrix cell, and pricing figure should cite its source inline. The footnote index at the end of the report provides the full URLs.
 
 Optionally write `output/sources.md` as a standalone source index.
 
@@ -228,6 +422,14 @@ Only when `figma_destination_url` is provided:
 - Export the visual research board to the Figma file
 
 If no Figma URL is provided, skip this step entirely.
+
+#### Subagent delegation (step 12)
+
+Delegate this step to a fast/cheap subagent when `figma_destination_url` is provided.
+
+- **Input:** `figma_destination_url`, path to `output/research.md`, path to `output/assets/`
+- **Output:** Figma export status confirmation
+- **Subagent prompt:** "You are exporting a competitive research report to Figma. Plan a layout with one section per competitor, including screenshot placements. Export the visual research board to the Figma file at: {figma_destination_url}. Use screenshots from {output_assets_path} and findings from {report_path}."
 
 ## Finding template
 
@@ -328,6 +530,24 @@ Positive / Negative / Mixed
 **Why it matters**
 [what this means for a product building in this space]
 ```
+
+## Thematic deep dive template
+
+Use this structure for each thematic analysis section:
+
+```markdown
+### Theme: [Theme Title]
+
+[2-4 paragraphs of comparative analysis across all competitors, with inline footnote citations. Write like an analyst brief — build an argument, cite evidence, draw conclusions. Compare how each competitor's approach to this theme reflects their broader philosophy.]
+
+**Key insight:** [1-2 sentence takeaway that a decision-maker can act on]
+
+**Evidence:**
+- [Source title](url) — [what it shows]
+- [Source title](url) — [what it shows]
+```
+
+Example themes: Architecture and deployment philosophy, Cart dynamics and itemization, Customization and branding psychology, Pricing economics and fee layering, Regional and regulatory positioning.
 
 ## Evidence capture rules
 

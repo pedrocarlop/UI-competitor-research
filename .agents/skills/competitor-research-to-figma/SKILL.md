@@ -38,7 +38,88 @@ If the research question is missing, ask for it first. Do not proceed without it
 - `output_path` — where to write the report (defaults to `./output/`)
 - `figma_destination_url` — Figma file URL for optional visual export
 
+## Model routing
+
+This skill uses model routing to delegate data-gathering steps to faster, cheaper models while keeping strategic analysis and final prose on the main orchestrator model.
+
+### Routing table
+
+Subagent model tiers range from high-reasoning to minimal, matched to task complexity:
+
+| Step | Role | Claude Code | Codex | Why |
+|------|------|-------------|-------|-----|
+| 1. Define question | Orchestrator | opus (main) | gpt-5.4 (main) | Interactive, needs conversation context |
+| 2. Market context | **Subagent** | sonnet | gpt-5.4 / medium | Evaluating and synthesizing market trends |
+| 3. Discover competitors | **Subagent** | sonnet | gpt-5.4 / medium | Evaluating relevance across many candidates |
+| 4. Build source map | **Subagent** | haiku | gpt-5.4-mini / low | Systematic URL enumeration |
+| 5. Feature matrix | Orchestrator | opus (main) | gpt-5.4 (main) | High synthesis, cross-referencing many sources |
+| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.4-mini / high | Per-competitor data gathering, needs judgment |
+| 9. Analysis & synthesis | Orchestrator | opus (main) | gpt-5.4 (main) | Core strategic reasoning |
+| 9b. Strategic thesis | Orchestrator | opus (main) | gpt-5.4 (main) | Highest reasoning required |
+| 10. Unknowns | **Subagent** | haiku | gpt-5.4-mini / low | Systematic gap documentation |
+| 11. Report | Orchestrator | opus (main) | gpt-5.4 (main) | Final prose quality matters |
+| 12. Figma export | **Subagent** | haiku | gpt-5.4-mini / low | Mechanical tool invocation |
+
+Steps 6, 7, and 8 are merged into a **single subagent per competitor** to reduce spawn overhead. One subagent handles evidence capture, pricing analysis, and sentiment gathering for its assigned competitor.
+
+### Parallelization
+
+- **Steps 2 + 3:** Spawn market context and competitor discovery subagents concurrently. Wait for both before proceeding to step 4.
+- **Steps 6+7+8:** Spawn one combined subagent per competitor concurrently (up to all competitors in parallel). Collect all results before proceeding to step 9.
+
+### Platform-specific spawn mechanics
+
+#### Claude Code
+
+Use the `Agent` tool with a `model` parameter matched to the routing table. Use `model: "sonnet"` for steps requiring judgment (2, 3, 6+7+8) and `model: "haiku"` for mechanical steps (4, 10, 12). Multiple `Agent` calls in a single message run concurrently:
+
+```
+Agent(model="sonnet", prompt="<subagent prompt for steps needing judgment>")
+Agent(model="haiku", prompt="<subagent prompt for mechanical steps>")
+```
+
+#### Codex (OpenAI)
+
+Use custom agent TOML files in `.codex/agents/`. Each TOML defines a subagent role with a model and reasoning effort tier matched to task complexity. Spawn subagents by name in natural language (e.g., "Spawn an evidence-gatherer agent for each competitor"). Parallelism is controlled by `[agents] max_threads` in `config.toml` (default 6).
+
+Available agent definitions:
+- `market-researcher` — steps 2+3 (market context + discovery) — `gpt-5.4` / medium effort
+- `source-mapper` — step 4 (source map) — `gpt-5.4-mini` / low effort
+- `evidence-gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.4-mini` / high effort
+- `gap-documenter` — step 10 (unknowns) — `gpt-5.4-mini` / low effort
+
+#### Antigravity
+
+If the `spawn-agent` skill is installed (`~/.gemini/antigravity/skills/spawn-agent`), delegate via:
+
+```bash
+./scripts/spawn-agent.sh --gemini --yolo -p "<subagent prompt with inputs>"
+```
+
+Otherwise, execute all steps directly on the main model.
+
+### Fallback behavior
+
+Model routing is an optimization, not a requirement. The skill must produce identical output regardless of whether routing is used.
+
+- If the platform does not support subagent spawning, execute all steps on the main model.
+- If a subagent fails or returns incomplete results: log the failure as a warning, re-execute the step on the main model, and continue the workflow.
+
 ## Ordered procedure
+
+When model routing is active (see above), the execution flow is:
+
+1. **Step 1** on orchestrator (interactive)
+2. **Steps 2 + 3** on subagents concurrently → wait for both
+3. **Step 4** on subagent → wait
+4. **Step 5** on orchestrator (needs all prior results)
+5. **Steps 6+7+8** on subagents concurrently (one per competitor) → wait for all
+6. **Steps 9, 9b** on orchestrator (strategic analysis)
+7. **Step 10** on subagent → wait
+8. **Step 11** on orchestrator (final report prose)
+9. **Step 12** on subagent (if Figma URL provided)
+
+When model routing is not available, execute all steps sequentially on the main model as before.
 
 ### 1. Define the research question and scope
 
@@ -66,6 +147,14 @@ When a `locale` is provided, or when the research question mentions a specific r
 
 Produce a "Market Landscape" section for the report. When locale-specific research was conducted, also produce a "Regional Analysis" section.
 
+#### Subagent delegation (step 2)
+
+Delegate this step to a fast/cheap subagent. Spawn concurrently with step 3.
+
+- **Input:** `research_question`, `locale` (optional)
+- **Output:** Markdown containing a "## Market Landscape" section (with subsections for segments, trends, events, sources) and optionally a "## Regional Analysis" section. All claims must include source URLs.
+- **Subagent prompt:** "You are a market research analyst. Research the market landscape for the following domain: {research_question}. Search the web for recent market overviews, key segments, trends, funding rounds, and regulatory considerations. If locale is provided ({locale}), also research dominant local platforms, regulatory mandates, and regional pricing dynamics. Produce two markdown sections: '## Market Landscape' and (if locale applies) '## Regional Analysis'. Cite every claim with its source URL. Be thorough but concise."
+
 ### 3. Discover competitors dynamically
 
 Find 5-10 relevant competitors using web search and the user's input:
@@ -85,6 +174,14 @@ If the user provides a `competitors` list, use it directly and skip discovery.
 
 Prefer competitors with mature, publicly documented products. Avoid selecting the user's own company when `company_name` is provided.
 
+#### Subagent delegation (step 3)
+
+Delegate this step to a fast/cheap subagent. Spawn concurrently with step 2.
+
+- **Input:** `research_question`, `company_name` (optional, to exclude), `competitors` (optional, if provided skip discovery)
+- **Output:** JSON array of objects: `[{"competitor_name": "...", "product_url": "...", "reason": "...", "confidence": "high|medium|low"}]` (5-10 entries)
+- **Subagent prompt:** "You are a competitive intelligence researcher. Find 5-10 relevant competitors for: {research_question}. Search the web for '[topic] competitors [current year]', 'best [category] tools', 'alternatives to [known product]'. Search G2, Capterra, and TrustRadius category pages. Exclude {company_name} if provided. For each competitor, return: competitor_name, product_url, reason for inclusion, and confidence level (high/medium/low). Prefer competitors with mature, publicly documented products. Return results as a JSON array."
+
 ### 4. Build a source map
 
 For each competitor, identify which public sources are available and relevant:
@@ -102,6 +199,14 @@ For each competitor, identify which public sources are available and relevant:
 - Product directories and comparison pages
 
 Record the source map before starting evidence collection.
+
+#### Subagent delegation (step 4)
+
+Delegate this step to a fast/cheap subagent.
+
+- **Input:** `research_question`, competitor list (names + product URLs from step 3)
+- **Output:** JSON object mapping each competitor name to an array of `{"source_type": "...", "url": "...", "notes": "..."}` objects
+- **Subagent prompt:** "You are mapping public sources for competitive research on: {research_question}. For each competitor below, identify which public sources are available and relevant: company website, feature pages, pricing pages, help centers, changelogs, app store pages, YouTube demos, review pages, etc. Visit each competitor's product URL to find these pages. Return a JSON object mapping each competitor name to an array of {source_type, url, notes} objects. Competitors: {competitor_list_json}"
 
 ### 5. Identify subfeatures and build feature matrix
 
@@ -141,6 +246,32 @@ For each competitor, also search for:
 - **Case studies and customer stories:** Search `[competitor] case study [feature]`, `[competitor] customer story`, `[competitor] used by [company]`. Record any named customer examples with their use case and measurable outcomes (e.g., "OpenAI used Stripe Payment Links for ChatGPT Plus subscriptions", "MemberPress reported 30% conversion lift after integrating Stripe Link").
 - **Developer community discourse:** Search `[competitor] [feature] site:stackoverflow.com`, `[competitor] [feature] site:github.com`, `[competitor] site:news.ycombinator.com`. These provide technical depth and candid assessments that marketing pages and review platforms miss.
 - **News and press coverage:** Search for recent articles about product launches, partnerships, or notable deployments related to the feature.
+
+#### Subagent delegation (steps 6+7+8 combined — per competitor)
+
+Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one subagent per competitor concurrently. Each subagent handles evidence capture, pricing analysis, and sentiment gathering for its assigned competitor.
+
+- **Input:** `competitor_name`, `product_url`, `source_map` (from step 4), `research_question`, `subfeature_list` (from step 5), `locale` (optional), `output_assets_path`
+- **Output:** A structured JSON bundle containing:
+  - `screenshots[]` — array of `{"path": "...", "source_url": "...", "context_note": "..."}` saved to `output/assets/`
+  - `pricing` — `{"pricing_model": "...", "tiers": [...], "cost_breakdowns": [...], "operational_fees": [...], "notable_strategies": [...], "enterprise_available": bool, "confidence": "..."}`
+  - `sentiment` — `{"overall_direction": "...", "top_praised": [...], "top_criticized": [...], "notable_quotes": [...], "sources": [...]}`
+  - `case_studies[]` — `[{"company_name": "...", "use_case": "...", "outcome": "...", "source_url": "...", "source_type": "..."}]`
+  - `evidence_notes[]` — raw observations about the competitor's implementation, strengths, weaknesses
+  - `flow_reconstruction[]` — step-by-step task flow with screenshot references
+- **Subagent prompt:** "You are a competitive intelligence researcher focused on a single competitor. Gather comprehensive public evidence for {competitor_name} ({product_url}) regarding: {research_question}.
+
+  YOUR TASKS:
+  1. EVIDENCE CAPTURE: Visit the sources listed in the source map below. Capture screenshots of key pages (homepage, pricing, feature pages, help center). Record source URLs and context notes. Save screenshots to {output_assets_path} using naming: {competitor_slug}-{source}-{topic}.png. Reconstruct task flows from help center guides, YouTube demos, or app store screenshots. Search for case studies, developer discourse (Stack Overflow, GitHub, Hacker News), and news coverage.
+  2. PRICING ANALYSIS: Visit the pricing page. Record tier names, prices, billing frequency, currency. Classify the pricing model. Note per-usage breakdowns, operational fees, add-on costs, and notable strategies. {locale_pricing_instruction}
+  3. SENTIMENT: Search G2, Capterra, App Store, Google Play, Reddit, Stack Overflow, GitHub, and Hacker News for reviews and discussions about {competitor_name} and {research_question}. Record overall rating, sentiment direction, top praised/criticized aspects, and notable quotes with source URLs.
+
+  For each subfeature in the list below, note whether {competitor_name} supports it (supported/partial/not_supported/unknown) with evidence.
+
+  SOURCE MAP: {source_map_json}
+  SUBFEATURES: {subfeature_list_json}
+
+  Return your findings as a single JSON object with keys: screenshots, pricing, sentiment, case_studies, evidence_notes, flow_reconstruction."
 
 ### 7. Analyze pricing models
 
@@ -234,6 +365,24 @@ For anything that could not be determined from public evidence:
 - Note what evidence is missing
 - Suggest a next validation step (user interview, authenticated access, sales call, trial signup, etc.)
 
+#### Subagent delegation (step 10)
+
+Delegate this step to a fast/cheap subagent.
+
+- **Input:** `research_question`, feature matrix (from step 5), all per-competitor evidence bundles (from steps 6-8), analysis findings (from step 9)
+- **Output:** Markdown using the Unknown template (see below), listing all identified gaps
+- **Subagent prompt:** "You are documenting research gaps for a competitive intelligence report on: {research_question}. Review the evidence collected and analysis produced below. For anything that could not be determined from public evidence, produce an entry using this template:
+
+  ### Unknown NN
+  **Question** — what remains unclear
+  **Why unresolved** — why public evidence was not enough
+  **Missing evidence** — what could not be found
+  **Next validation step** — how to validate later (user interview, trial signup, sales call, etc.)
+
+  FEATURE MATRIX: {feature_matrix_summary}
+  EVIDENCE GAPS: {evidence_gaps_summary}
+  ANALYSIS FINDINGS: {analysis_findings_summary}"
+
 ### 11. Produce the markdown report
 
 Write `output/research.md` with these sections:
@@ -273,6 +422,14 @@ Only when `figma_destination_url` is provided:
 - Export the visual research board to the Figma file
 
 If no Figma URL is provided, skip this step entirely.
+
+#### Subagent delegation (step 12)
+
+Delegate this step to a fast/cheap subagent when `figma_destination_url` is provided.
+
+- **Input:** `figma_destination_url`, path to `output/research.md`, path to `output/assets/`
+- **Output:** Figma export status confirmation
+- **Subagent prompt:** "You are exporting a competitive research report to Figma. Plan a layout with one section per competitor, including screenshot placements. Export the visual research board to the Figma file at: {figma_destination_url}. Use screenshots from {output_assets_path} and findings from {report_path}."
 
 ## Finding template
 
