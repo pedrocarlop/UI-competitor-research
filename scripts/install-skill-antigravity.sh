@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_DIR="$REPO_ROOT/.agents/skills/competitor-research-to-figma"
 DEST_ROOT="$HOME/.antigravity/skills"
-DEST_DIR="$DEST_ROOT/competitor-research-to-figma"
+DEST_DIR="$DEST_ROOT/competitor-research"
 
 if [ ! -d "$SKILL_DIR" ]; then
   echo "Error: skill directory not found at $SKILL_DIR"
@@ -23,5 +23,8 @@ else
   cp -R "$SKILL_DIR/." "$DEST_DIR/"
 fi
 
+# Clean up old name if present
+rm -rf "$DEST_ROOT/competitor-research-to-figma"
+
 echo "Installed: $DEST_DIR"
-echo "Restart Antigravity to use competitor-research-to-figma"
+echo "Restart Antigravity to use competitor-research"

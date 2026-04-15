@@ -1,7 +1,7 @@
 {
-  "name": "competitor-research-to-figma",
-  "version": "1.0.0",
-  "description": "Native Codex skill repository for competitor research, browser capture, grounded analysis, and Figma benchmark board export.",
+  "name": "competitor-research",
+  "version": "2.0.0",
+  "description": "Skill for deep competitor research using public evidence — websites, help centers, changelogs, app stores, reviews — producing markdown dossiers with screenshots and sourced findings.",
   "private": true,
   "type": "module",
   "engines": {

@@ -1,17 +1,20 @@
 # AGENTS.md
 
-This repository contains the native Codex skill `competitor-research-to-figma`.
+This repository contains the `competitor-research` skill for Codex, Claude Code, and Antigravity.
 
-The installable skill lives in `.agents/skills/competitor-research-to-figma/`.
+The installable skill lives in `.agents/skills/competitor-research-to-figma/` (legacy path retained for installation compatibility).
 
-Keep the repository usable as a native Codex skill at all times:
-- preserve the current skill folder shape
-- keep scripts typed, deterministic, and schema-driven
-- keep run artifacts machine-readable and stable across executions
-- keep Figma layout vertically grouped by competitor and left-to-right by capture step
+## Principles
 
-When extending the repository:
-- prefer additive changes over breaking shape changes
-- update examples and schemas alongside any data-model change
-- do not weaken the manual-intervention or credential gates
+- Default to public-evidence-first research. Do not treat login as the starting point.
+- Produce markdown reports with screenshots, links, and structured findings.
+- Every finding must distinguish observed facts, inferences, and unknowns.
+- Capture screenshots systematically with consistent naming and source attribution.
+- Credentials are optional and only used when explicitly requested by the user.
 
+## When extending the repository
+
+- Prefer additive changes over breaking shape changes.
+- Keep the output contract stable: `output/research.md` + `output/assets/`.
+- Do not reintroduce credential gates or login-first workflows as defaults.
+- Update examples alongside any methodology or output format change.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository is meant to be installed and used as a native Codex skill named `competitor-research-to-figma`.
+This repository is a skill for deep competitor research using public evidence. It runs in Codex, Claude Code, or Antigravity.
 
 ## Skill location
 
@@ -24,138 +24,80 @@ npm install
 
 ### Option 2: Link the skill into your Codex skills directory
 
-If your Codex installation expects skills under a central `$CODEX_HOME/skills` directory, symlink or copy the skill folder:
-
 ```bash
-ln -s "/absolute/path/to/repo/.agents/skills/competitor-research-to-figma" "$CODEX_HOME/skills/competitor-research-to-figma"
+ln -s "/absolute/path/to/repo/.agents/skills/competitor-research-to-figma" "$CODEX_HOME/skills/competitor-research"
 ```
 
-## Figma setup requirements
+## Setup requirements
 
-The skill validates Figma availability before research begins. At least one of the following should be true:
-- Codex Figma tooling is installed and available in your environment
-- `FIGMA_ACCESS_TOKEN` or `FIGMA_API_TOKEN` is set for read-oriented validation
-- `FIGMA_WRITE_COMMAND` is set if you want command-based write execution from the export script
-- `FIGMA_CAPTURE_COMMAND` is set if you want command-based HTML capture execution from the export script
+### Minimum (public research mode)
 
-Recommended approach:
-- use Codex with the Figma plugin enabled
-- provide a valid `figma_destination_url` pointing to a file or page you can edit
+No external services are required. The skill uses web search and browser tools to gather public evidence and produce a markdown report.
 
-### `FIGMA_WRITE_COMMAND` contract
+You need:
+- Codex, Claude Code, or Antigravity installed
+- A clear research question
 
-When `FIGMA_WRITE_COMMAND` is set, `npm run export:figma` will invoke it with one argument:
+### Optional: Browser automation
 
-```text
-<absolute path>/runs/<timestamp>/figma-write-payload.json
-```
+For automated screenshot capture, at least one of the following should be available:
+- Playwright installed locally (`npm install`)
+- `BROWSER_AGENT_COMMAND` pointing to a custom browser automation command
+- `PLAYWRIGHT_WS_ENDPOINT` configured for remote browser execution
+- A browser MCP tool available in your environment
 
-The payload contains:
-- `run_id`
-- `file_key`
-- `page_name`
-- `description`
-- `plan_path`
-- `asset_manifest_path`
-- `asset_count`
-- `code`
-- `skill_names`
+If no browser automation is available, the skill can still produce research using web search, web fetch, and manual evidence — but automated screenshot capture will not be available.
 
-The `code` field is deterministic Plugin API JavaScript intended for Codex Figma execution. A command wrapper can read the payload and forward those values into your preferred Figma automation path.
+### Optional: Authenticated research
 
-### `FIGMA_CAPTURE_COMMAND` contract
-
-When `FIGMA_CAPTURE_COMMAND` is set, `npm run export:figma` will invoke it with one argument:
-
-```text
-<absolute path>/runs/<timestamp>/figma-capture-payload.json
-```
-
-The payload contains:
-- `run_id`
-- `destination_url`
-- `file_key`
-- `page_name`
-- `html_entry_path`
-- `server_root`
-- `asset_manifest_path`
-- `plan_path`
-
-Use this contract for the primary export path: the skill generates a reusable HTML research board first, then sends that HTML into Figma as the final record.
-
-## Browser agent setup requirements
-
-The skill validates browser tooling before discovery and capture. At least one of the following should be true:
-- Playwright is installed locally through `npm install`
-- `BROWSER_AGENT_COMMAND` points to a custom browser automation command
-- `PLAYWRIGHT_WS_ENDPOINT` is configured for remote browser execution
-
-The included implementation uses Playwright directly for browser capture and can also defer to a configured browser-agent command when your environment requires it.
-
-When `BROWSER_AGENT_COMMAND` is set, the script also writes:
-- `browser-agent-request.json`
-- `browser-agent-result.json` when the command returns a structured result
-
-The command receives a single JSON argument plus the environment variables `BROWSER_AGENT_REQUEST_PATH` and `BROWSER_AGENT_RESULT_PATH`. The JSON includes credentials, navigation hints, safe/blocked keyword lists, output paths, optional resume URL, `auth_attempts_max`, and `manual_login_required_after_two_attempts`.
-
-## Providing competitor credentials safely
-
-Create a JSON file based on:
+Only relevant when the user explicitly requests login-based evidence gathering. See the credential examples at:
 
 ```text
 .agents/skills/competitor-research-to-figma/examples/competitor-credentials.example.json
 ```
 
-Recommended practices:
-- keep the real file outside version control
-- store only the accounts you want included in live capture
-- use `email_env` and `password_env` for secrets you want resolved from environment variables
-- use `notes`, `navigation_hints`, and optional `start_url` to describe safe navigation after login
-- do not commit real passwords
+Keep credential files outside version control. Never commit real passwords.
 
-## Invocation flow after installation
+## Invocation
 
-1. Provide the mandatory inputs:
-   - `feature_description`
-   - `figma_destination_url`
-2. Optionally provide:
-   - `company_name`
-   - `competitor_allowlist`
-   - `locale`
-   - `credential_registry_path`
-   - `catalog_path`
-   - `resume_from_run_path`
-   - `evidence_import_path`
-3. Run the full orchestrated workflow:
+### Required input
 
-   ```bash
-   npm run run:research -- --input ./input/research.json
-   ```
+- `research_question` — what feature, workflow, or capability to benchmark
 
-4. Optionally run the stages individually when you need tighter control:
+### Optional inputs
 
-   ```bash
-   npm run check:setup -- --input ./input/research.json
-   npm run discover -- --input ./input/discovery.json --output ./runs/latest/discovery.json
-   npm run capture -- --input ./input/capture.json
-   npm run analyze -- --input ./runs/<timestamp>/research-run.json
-   npm run export:figma -- --input ./runs/<timestamp>/research-run.json
-   npm run ingest:evidence -- --input ./input/evidence-ingest.json --output ./runs/<timestamp>/imported-evidence.json
-   ```
+- `company_name` — your company, to exclude from competitor lists
+- `competitors` — explicit list of competitors to include
+- `scope` — specific sources or areas to focus on
+- `output_path` — where to write the report (defaults to `./output/`)
 
-The preferred export path is:
-- populate `figma-board.html` from the reusable template
-- send it to Figma through `figma-capture-payload.json`
-- use `figma-write-payload.json` only as a fallback
+### Example
+
+```text
+Please run competitor-research.
+
+research_question:
+How do competitors handle payment link creation, management, and sharing?
+
+company_name:
+Northstar Commerce
+```
+
+## Output
+
+The skill produces:
+
+```
+output/
+  assets/
+    {competitor}-{source}-{topic}.png
+    ...
+  research.md
+  sources.md   (optional)
+```
+
+See the [README](./README.md) for the full output format and evidence model.
 
 ## Native skill usage
 
-Once installed, invoke the skill from Codex with a prompt that includes:
-- the target feature description
-- the Figma destination URL
-- optional company context
-- optional allowlist and locale
-- optional credential registry
-- optional manual evidence import path
-
-See `.agents/skills/competitor-research-to-figma/examples/invocation.example.md` for a full example.
+Once installed, invoke the skill from Codex, Claude Code, or Antigravity with a prompt that includes the research question and any optional context. See `.agents/skills/competitor-research-to-figma/examples/invocation.example.md` for examples.
