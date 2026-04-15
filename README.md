@@ -254,7 +254,7 @@ rm -rf /tmp/UI-competitor-research
 ### Update in Antigravity
 
 ```bash
-rm -rf ~/.antigravity/skills/competitor-research-to-figma && \
+rm -rf ~/.agents/skills/competitor-research && \
 git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
 bash /tmp/UI-competitor-research/scripts/install-skill-antigravity.sh && \
 rm -rf /tmp/UI-competitor-research

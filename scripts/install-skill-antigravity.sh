@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_DIR="$REPO_ROOT/.agents/skills/competitor-research-to-figma"
-DEST_ROOT="$HOME/.antigravity/skills"
+DEST_ROOT="$HOME/.agents/skills"
 DEST_DIR="$DEST_ROOT/competitor-research"
 
 if [ ! -d "$SKILL_DIR" ]; then
