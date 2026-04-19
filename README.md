@@ -207,6 +207,13 @@ python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-githu
   --path .agents/skills/competitor-research-to-figma
 ```
 
+For the tuned Codex routing setup, also copy the bundled agent templates into `~/.codex/agents/` after installing the skill:
+
+```bash
+mkdir -p ~/.codex/agents && \
+cp ~/.codex/skills/competitor-research-to-figma/codex/agents/*.toml ~/.codex/agents/
+```
+
 Then close and reopen Codex.
 
 ### For Claude Code
@@ -240,6 +247,13 @@ rm -rf ~/.codex/skills/competitor-research-to-figma && \
 python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
   --repo pedrocarlop/UI-competitor-research \
   --path .agents/skills/competitor-research-to-figma
+```
+
+Then refresh the Codex agent templates:
+
+```bash
+mkdir -p ~/.codex/agents && \
+cp ~/.codex/skills/competitor-research-to-figma/codex/agents/*.toml ~/.codex/agents/
 ```
 
 ### Update in Claude Code
