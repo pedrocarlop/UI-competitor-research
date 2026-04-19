@@ -197,82 +197,42 @@ That's it. No Figma file, no competitor accounts, no API keys required for the d
 
 ---
 
-## Install
+## Install or update
 
-### For Codex
+Pick your app, paste one command into Terminal, wait for it to finish, then reopen the app. The same command works for both first-time install and future updates.
 
-```bash
-python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo pedrocarlop/UI-competitor-research \
-  --path .agents/skills/competitor-research-to-figma
-```
-
-For the tuned Codex routing setup, also copy the bundled agent templates into `~/.codex/agents/` after installing the skill:
+### Codex
 
 ```bash
-mkdir -p ~/.codex/agents && \
-cp ~/.codex/skills/competitor-research-to-figma/codex/agents/*.toml ~/.codex/agents/
+rm -rf /tmp/ui-competitor-research-install && \
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/ui-competitor-research-install && \
+bash /tmp/ui-competitor-research-install/scripts/install-skill-codex.sh && \
+rm -rf /tmp/ui-competitor-research-install
 ```
 
 Then close and reopen Codex.
 
-### For Claude Code
+### Claude Code
 
 ```bash
-git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
-bash /tmp/UI-competitor-research/scripts/install-skill-claude.sh && \
-rm -rf /tmp/UI-competitor-research
+rm -rf /tmp/ui-competitor-research-install && \
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/ui-competitor-research-install && \
+bash /tmp/ui-competitor-research-install/scripts/install-skill-claude.sh && \
+rm -rf /tmp/ui-competitor-research-install
 ```
 
-Then restart Claude Code.
+Then close and reopen Claude Code.
 
-### For Antigravity
+### Antigravity
 
 ```bash
-git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
-bash /tmp/UI-competitor-research/scripts/install-skill-antigravity.sh && \
-rm -rf /tmp/UI-competitor-research
+rm -rf /tmp/ui-competitor-research-install && \
+git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/ui-competitor-research-install && \
+bash /tmp/ui-competitor-research-install/scripts/install-skill-antigravity.sh && \
+rm -rf /tmp/ui-competitor-research-install
 ```
 
-Then restart Antigravity.
-
----
-
-## Update (uninstall and reinstall)
-
-### Update in Codex
-
-```bash
-rm -rf ~/.codex/skills/competitor-research-to-figma && \
-python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
-  --repo pedrocarlop/UI-competitor-research \
-  --path .agents/skills/competitor-research-to-figma
-```
-
-Then refresh the Codex agent templates:
-
-```bash
-mkdir -p ~/.codex/agents && \
-cp ~/.codex/skills/competitor-research-to-figma/codex/agents/*.toml ~/.codex/agents/
-```
-
-### Update in Claude Code
-
-```bash
-rm -f ~/.claude/commands/competitor-research-to-figma.md && \
-git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
-bash /tmp/UI-competitor-research/scripts/install-skill-claude.sh && \
-rm -rf /tmp/UI-competitor-research
-```
-
-### Update in Antigravity
-
-```bash
-rm -rf ~/.agents/skills/competitor-research && \
-git clone https://github.com/pedrocarlop/UI-competitor-research.git /tmp/UI-competitor-research && \
-bash /tmp/UI-competitor-research/scripts/install-skill-antigravity.sh && \
-rm -rf /tmp/UI-competitor-research
-```
+Then close and reopen Antigravity.
 
 ---
 

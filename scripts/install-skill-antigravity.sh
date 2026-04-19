@@ -23,6 +23,8 @@ else
   cp -R "$SKILL_DIR/." "$DEST_DIR/"
 fi
 
+find "$DEST_DIR" -name '.DS_Store' -delete
+
 # Clean up old name if present
 rm -rf "$DEST_ROOT/competitor-research-to-figma"
 
