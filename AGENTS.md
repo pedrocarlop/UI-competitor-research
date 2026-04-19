@@ -20,7 +20,7 @@ The installable skill lives in `.agents/skills/competitor-research-to-figma/` (l
 ## When extending the repository
 
 - Prefer additive changes over breaking shape changes.
-- Keep the output contract stable: `output/research.md` + `output/assets/`.
+- Keep the output contract stable inside each research-specific run directory: `output/research.md` + `output/assets/`.
 - Do not reintroduce credential gates or login-first workflows as defaults.
 - Update examples alongside any methodology or output format change.
 - `SKILL.md` is the single source of truth for the skill definition. The Claude install script copies it directly to `~/.claude/commands/`.

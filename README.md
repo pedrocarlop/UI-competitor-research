@@ -104,16 +104,21 @@ you want to understand
 The skill produces a markdown report with linked evidence:
 
 ```
-output/
-  assets/
-    competitor-a-homepage-full.png
-    competitor-a-pricing.png
-    competitor-a-help-checkout.png
-    competitor-b-appstore-01.png
-    competitor-b-youtube-flow-step-03.png
-  research.md
-  sources.md          (optional — full source index)
+runs/
+  payment-links/
+    2026-04-19T10-30-00Z/
+      output/
+        assets/
+          competitor-a-homepage-full.png
+          competitor-a-pricing.png
+          competitor-a-help-checkout.png
+          competitor-b-appstore-01.png
+          competitor-b-youtube-flow-step-03.png
+        research.md
+        sources.md          (optional — full source index)
 ```
+
+Each run gets its own research-named directory under `runs/`, so the same project folder can hold multiple research topics without collisions.
 
 The markdown report includes:
 

@@ -951,6 +951,7 @@ function buildStoredInputForCapture(request: CaptureRequest): ResearchRun["input
   const credentialRegistryPath = resolveCredentialPath(request);
   return buildStoredResearchInput({
     feature_description: request.feature_description,
+    ...(request.research_name ? { research_name: request.research_name } : {}),
     ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
     ...(request.company_name ? { company_name: request.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
@@ -1100,7 +1101,11 @@ export async function captureCompetitorFlows(request: CaptureRequest): Promise<R
     console.warn("Setup validation warning: some tooling is unavailable. Capture will proceed with available tools.");
   }
 
-  const { runId, runDirectory } = createRunDirectory(process.cwd(), request.run_id);
+  const { runId, runDirectory } = createRunDirectory(process.cwd(), {
+    featureDescription: request.feature_description,
+    ...(request.research_name ? { researchName: request.research_name } : {}),
+    ...(request.run_id ? { runId: request.run_id } : {}),
+  });
   const startedAt = nowIso();
   const result = await captureDiscoveredCompetitors(request, { runId, runDirectory });
 

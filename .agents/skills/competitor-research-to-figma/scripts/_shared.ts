@@ -55,6 +55,7 @@ export interface SetupValidationResult {
 
 export interface ResearchInput {
   feature_description: string;
+  research_name?: string;
   figma_destination_url?: string;
   company_name?: string;
   credential_registry_path?: string;
@@ -477,11 +478,34 @@ export function makeRunId(date = new Date()): string {
   return date.toISOString().replace(/\.\d{3}Z$/, "Z").replace(/:/g, "-");
 }
 
-export function createRunDirectory(baseDir: string, runId?: string): { runId: string; runDirectory: string } {
-  const resolvedRunId = runId ?? makeRunId();
-  const runDirectory = path.join(baseDir, "runs", resolvedRunId);
+function truncateSlug(value: string, maxLength: number): string {
+  if (value.length <= maxLength) {
+    return value;
+  }
+  return value.slice(0, maxLength).replace(/-+$/g, "");
+}
+
+export function resolveResearchSlug(input: Pick<ResearchInput, "feature_description" | "research_name">): string {
+  const rawValue =
+    isNonEmptyString(input.research_name)
+      ? input.research_name
+      : input.feature_description;
+  const slug = truncateSlug(slugify(rawValue), 80);
+  return slug || "research";
+}
+
+export function createRunDirectory(
+  baseDir: string,
+  options: { runId?: string; researchName?: string; featureDescription: string },
+): { runId: string; researchSlug: string; runDirectory: string } {
+  const resolvedRunId = options.runId ?? makeRunId();
+  const researchSlug = resolveResearchSlug({
+    feature_description: options.featureDescription,
+    ...(options.researchName ? { research_name: options.researchName } : {}),
+  });
+  const runDirectory = path.join(baseDir, "runs", researchSlug, resolvedRunId);
   ensureDir(runDirectory);
-  return { runId: resolvedRunId, runDirectory };
+  return { runId: resolvedRunId, researchSlug, runDirectory };
 }
 
 export function getRepoRoot(): string {
@@ -679,6 +703,7 @@ export function defaultFigmaExport(destinationUrl: string, runDirectory: string)
 export function buildStoredResearchInput(input: ResearchInput): ResearchInput {
   return {
     feature_description: input.feature_description,
+    ...(input.research_name ? { research_name: input.research_name } : {}),
     ...(input.figma_destination_url ? { figma_destination_url: input.figma_destination_url } : {}),
     ...(input.company_name ? { company_name: input.company_name } : {}),
     ...(input.credential_registry_path ? { credential_registry_path: input.credential_registry_path } : {}),

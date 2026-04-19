@@ -35,7 +35,8 @@ If the research question is missing, ask for it first. Do not proceed without it
 - `company_name` — the user's company, to exclude from competitor lists
 - `competitors` — explicit list of competitors to include
 - `scope` — specific sources or areas to focus on (e.g., "pricing pages only", "help center articles")
-- `output_path` — where to write the report (defaults to `./output/`)
+- `research_name` — short label used to name the run directory (defaults to a slug derived from `research_question`)
+- `output_path` — where to write the report (defaults to `./runs/<research-name>/<run-id>/output/`)
 - `figma_destination_url` — Figma file URL for optional visual export
 
 ## Model routing
@@ -251,7 +252,7 @@ For each competitor, visit the mapped sources and:
 - Record the source URL and a short context note for each screenshot
 - Use consistent naming: `{competitor}-{source}-{topic}.png`
   - Examples: `stripe-pricing-tier-comparison.png`, `square-helpcenter-payment-links.png`
-- Save screenshots to `output/assets/`
+- Save screenshots to the active run directory's `output/assets/`
 
 Where possible, reconstruct task flows and user journeys from:
 - Help center step-by-step guides
@@ -270,7 +271,7 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
 
 - **Input:** `competitor_name`, `product_url`, `source_map` (from step 4), `research_question`, `subfeature_list` (from step 5), `locale` (optional), `output_assets_path`
 - **Output:** A structured JSON bundle containing:
-  - `screenshots[]` — array of `{"path": "...", "source_url": "...", "context_note": "..."}` saved to `output/assets/`
+  - `screenshots[]` — array of `{"path": "...", "source_url": "...", "context_note": "..."}` saved to the active run directory's `output/assets/`
   - `pricing` — `{"pricing_model": "...", "tiers": [...], "cost_breakdowns": [...], "operational_fees": [...], "notable_strategies": [...], "enterprise_available": bool, "confidence": "..."}`
   - `sentiment` — `{"overall_direction": "...", "top_praised": [...], "top_criticized": [...], "notable_quotes": [...], "sources": [...]}`
   - `case_studies[]` — `[{"company_name": "...", "use_case": "...", "outcome": "...", "source_url": "...", "source_type": "..."}]`
@@ -416,7 +417,7 @@ Delegate this step to a fast/cheap subagent.
 
 ### 11. Produce the markdown report
 
-Write `output/research.md` with these sections (for Antigravity, use `write_to_file` with `IsArtifact: true` to generate a rich markdown viewer):
+Write `<run_directory>/output/research.md` with these sections (for Antigravity, use `write_to_file` with `IsArtifact: true` to generate a rich markdown viewer):
 
 1. **Executive summary** — Open with a 1-2 sentence strategic thesis that captures the fundamental competitive dynamic. Follow with 3-5 key insights that support, nuance, or qualify the thesis. Write in narrative prose with inline citations, not as a bullet list. This is the "if you read one section" summary that a decision-maker can act on.
 2. **Market landscape** — industry context, segments, trends, recent events, with source citations
@@ -444,7 +445,7 @@ Write `output/research.md` with these sections (for Antigravity, use `write_to_f
 
 Use numbered footnotes `[N]` for inline citations throughout the entire report. Every factual claim, feature matrix cell, and pricing figure should cite its source inline. The footnote index at the end of the report provides the full URLs.
 
-Optionally write `output/sources.md` as a standalone source index.
+Optionally write `<run_directory>/output/sources.md` as a standalone source index.
 
 ### 12. Optionally export to Figma
 
@@ -458,7 +459,7 @@ If no Figma URL is provided, skip this step entirely.
 
 Delegate this step to a fast/cheap subagent when `figma_destination_url` is provided.
 
-- **Input:** `figma_destination_url`, path to `output/research.md`, path to `output/assets/`
+- **Input:** `figma_destination_url`, path to `<run_directory>/output/research.md`, path to `<run_directory>/output/assets/`
 - **Output:** Figma export status confirmation
 - **Subagent prompt:** "You are exporting a competitive research report to Figma. Plan a layout with one section per competitor, including screenshot placements. Export the visual research board to the Figma file at: {figma_destination_url}. Use screenshots from {output_assets_path} and findings from {report_path}."
 
@@ -587,7 +588,7 @@ Example themes: Architecture and deployment philosophy, Cart dynamics and itemiz
 - Crops where necessary to highlight a pattern
 - Consistent naming: `{competitor}-{source}-{topic}.png` (Note: for Antigravity, native WebP recordings are automatically saved to the artifacts directory and should be embedded instead of static PNGs)
 - Every image or recording must have a source URL and context note
-- Save all images to `output/assets/` (For Antigravity, reference the captured WebP artifacts)
+- Save all images to the active run directory's `output/assets/` (For Antigravity, reference the captured WebP artifacts)
 - In Codex, only claim an image was captured if the file exists on disk; prefer the bundled Playwright scripts over browser-read-only tool flows when persistent PNGs are required
 
 ## Analysis rules
@@ -643,8 +644,9 @@ This skill must never:
 ## Output contract
 
 Every run must produce:
-- A markdown report at `output/research.md`
-- Screenshot evidence at `output/assets/`
+- A research-specific run directory, e.g. `runs/<research-slug>/<run-id>/`
+- A markdown report at `runs/<research-slug>/<run-id>/output/research.md`
+- Screenshot evidence at `runs/<research-slug>/<run-id>/output/assets/`
 - Clear separation of observed facts, inferences, and unknowns
 - Source attribution for every finding
 - Confidence levels for every finding

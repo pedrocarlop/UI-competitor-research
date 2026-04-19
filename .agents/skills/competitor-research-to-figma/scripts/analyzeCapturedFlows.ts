@@ -313,7 +313,7 @@ export function analyzeRun(run: ResearchRun): ResearchRun {
 async function main(): Promise<void> {
   const run = requireInput<ResearchRun>(
     process.argv.slice(2),
-    "Usage: npm run analyze -- --input ./runs/<timestamp>/research-run.json",
+    "Usage: npm run analyze -- --input ./runs/<research-slug>/<run-id>/research-run.json",
   );
   const analyzed = analyzeRun(run);
   const outputPath = path.join(analyzed.run_directory, "research-run.json");

@@ -19,7 +19,8 @@ Codex capture workflow preference:
   `npm run capture -- --input <path-to-json>`.
 - For end-to-end capture plus report generation, prepare a JSON input file and run
   `npm run run:research -- --input <path-to-json>`.
-- Save screenshots under `output/assets/` or the active run directory using the
+- Save screenshots under the active research run directory's `output/assets/`
+  using the
   naming convention `{competitor_slug}-{source}-{topic}.png`.
 - If local browser capture is unavailable, continue gathering public evidence but
   explicitly mark the screenshot as missing instead of inventing an asset path.

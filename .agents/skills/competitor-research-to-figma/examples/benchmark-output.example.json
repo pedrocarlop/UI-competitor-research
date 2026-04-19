@@ -1,11 +1,12 @@
 {
   "run_id": "2026-04-12T10-30-00Z",
-  "run_directory": "runs/2026-04-12T10-30-00Z",
+  "run_directory": "runs/payment-links/2026-04-12T10-30-00Z",
   "started_at": "2026-04-12T10:30:00.000Z",
   "updated_at": "2026-04-12T11:02:00.000Z",
   "completed_at": "2026-04-12T11:02:00.000Z",
   "input": {
     "feature_description": "Reusable payment links for merchants with expiration, branding, and post-payment management.",
+    "research_name": "Payment Links",
     "company_name": "Northstar Commerce"
   },
   "market_context": {

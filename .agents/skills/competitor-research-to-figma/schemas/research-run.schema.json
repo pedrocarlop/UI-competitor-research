@@ -46,6 +46,9 @@
         "feature_description": {
           "type": "string"
         },
+        "research_name": {
+          "type": "string"
+        },
         "figma_destination_url": {
           "type": "string",
           "format": "uri"

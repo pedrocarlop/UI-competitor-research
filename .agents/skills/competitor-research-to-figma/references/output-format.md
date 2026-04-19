@@ -5,12 +5,15 @@ This document defines the output structure produced by the competitor-research s
 ## Directory structure
 
 ```
-output/
-  assets/
-    {competitor}-{source}-{topic}.png
-    ...
-  research.md
-  sources.md   (optional)
+runs/
+  <research-name>/
+    <run-id>/
+      output/
+        assets/
+          {competitor}-{source}-{topic}.png
+          ...
+        research.md
+        sources.md   (optional)
 ```
 
 ## Screenshot naming

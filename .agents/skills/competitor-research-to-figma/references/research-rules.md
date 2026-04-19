@@ -50,7 +50,7 @@ Gather evidence from these public sources (in priority order for most research q
 - Crops where necessary to highlight a specific pattern.
 - Consistent naming: `{competitor}-{source}-{topic}.png`.
 - Every image must have a source URL and context note.
-- Save all images to `output/assets/`.
+- Save all images to the active run directory's `output/assets/`.
 
 ## Analysis rules
 
@@ -157,7 +157,7 @@ Never attempt:
 
 ## Output rules
 
-- Write `output/research.md` as the primary deliverable.
-- Save screenshots to `output/assets/`.
+- Write `<run_directory>/output/research.md` as the primary deliverable.
+- Save screenshots to `<run_directory>/output/assets/`.
 - Use the finding template, unknown template, pricing template, and sentiment template from SKILL.md.
-- Optionally write `output/sources.md` as a standalone source index.
+- Optionally write `<run_directory>/output/sources.md` as a standalone source index.

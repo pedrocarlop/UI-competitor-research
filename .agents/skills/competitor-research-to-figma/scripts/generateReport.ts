@@ -489,7 +489,7 @@ export function generateMarkdownReport(run: ResearchRun, outputDir?: string): st
 async function main(): Promise<void> {
   const run = requireInput<ResearchRun>(
     process.argv.slice(2),
-    "Usage: npm run generate:report -- --input ./runs/<timestamp>/research-run.json",
+    "Usage: npm run generate:report -- --input ./runs/<research-slug>/<run-id>/research-run.json",
   );
   const reportPath = generateMarkdownReport(run);
 

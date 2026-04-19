@@ -1086,7 +1086,7 @@ export function exportResearchToFigma(run: ResearchRun): ResearchRun {
 async function main(): Promise<void> {
   const run = requireInput<ResearchRun>(
     process.argv.slice(2),
-    "Usage: npm run export:figma -- --input ./runs/<timestamp>/research-run.json",
+    "Usage: npm run export:figma -- --input ./runs/<research-slug>/<run-id>/research-run.json",
   );
   const exported = exportResearchToFigma(run);
   writeJsonFile(path.join(exported.run_directory, "research-run.json"), exported);

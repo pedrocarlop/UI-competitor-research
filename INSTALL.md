@@ -69,7 +69,8 @@ Keep credential files outside version control. Never commit real passwords.
 - `company_name` — your company, to exclude from competitor lists
 - `competitors` — explicit list of competitors to include
 - `scope` — specific sources or areas to focus on
-- `output_path` — where to write the report (defaults to `./output/`)
+- `research_name` — short label used to name the run directory (defaults to a slug derived from the research question)
+- `output_path` — where to write the report (defaults to `./runs/<research-name>/<run-id>/output/`)
 
 ### Example
 
@@ -88,12 +89,15 @@ Northstar Commerce
 The skill produces:
 
 ```
-output/
-  assets/
-    {competitor}-{source}-{topic}.png
-    ...
-  research.md
-  sources.md   (optional)
+runs/
+  <research-name>/
+    <run-id>/
+      output/
+        assets/
+          {competitor}-{source}-{topic}.png
+          ...
+        research.md
+        sources.md   (optional)
 ```
 
 See the [README](./README.md) for the full output format and evidence model.

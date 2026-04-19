@@ -8,6 +8,9 @@ Please run competitor-research.
 research_question:
 I want to become an expert on payment links — how do competitors handle creation, management, sharing, pricing, and what do customers love or hate about them?
 
+research_name:
+Payment Links
+
 company_name:
 Northstar Commerce
 ```
@@ -18,7 +21,7 @@ Expected behavior:
 - Builds a subfeature matrix (branding, expiration, analytics, multi-currency, etc.)
 - Captures pricing pages and compares pricing models
 - Gathers customer sentiment from G2, App Store, Reddit
-- Produces a comprehensive `output/research.md` with all sections
+- Produces a comprehensive `runs/payment-links/<run-id>/output/research.md` with all sections
 
 ## Basic usage — broad competitive audit
 
@@ -28,6 +31,9 @@ Please run competitor-research.
 research_question:
 How do top project management tools handle recurring task automation?
 
+research_name:
+Recurring Task Automation
+
 company_name:
 Acme Project Tools
 ```
@@ -35,7 +41,7 @@ Acme Project Tools
 Expected behavior:
 - Discovers 5-10 relevant competitors automatically
 - Gathers evidence from feature pages, help centers, pricing pages, and app stores
-- Produces `output/research.md` with findings and `output/assets/` with screenshots
+- Produces `runs/recurring-task-automation/<run-id>/output/research.md` with findings and `runs/recurring-task-automation/<run-id>/output/assets/` with screenshots
 
 ## Non-payments domain — design tools
 
@@ -183,7 +189,7 @@ competitors:
 
 Expected behavior:
 - Runs the full research workflow
-- Produces `output/research.md` as always
+- Produces `runs/e-commerce-platform-catalog-management/<run-id>/output/research.md` as always
 - Additionally exports a visual research board to the specified Figma file
 
 ## With authenticated research (optional)

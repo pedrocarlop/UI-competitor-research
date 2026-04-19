@@ -82,6 +82,7 @@ function buildStoredInput(request: RunResearchRequest): ResearchRun["input"] {
   const credentialRegistryPath = resolveCredentialRegistryPath(request);
   return buildStoredResearchInput({
     feature_description: request.feature_description,
+    ...(request.research_name ? { research_name: request.research_name } : {}),
     ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
     ...(request.company_name ? { company_name: request.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
@@ -105,7 +106,11 @@ export async function runResearch(request: RunResearchRequest): Promise<Research
     console.warn("Setup validation warning: some tooling is unavailable. The skill will proceed with available tools.");
   }
 
-  const { runId, runDirectory } = createRunDirectory(process.cwd(), request.run_id);
+  const { runId, runDirectory } = createRunDirectory(process.cwd(), {
+    featureDescription: request.feature_description,
+    ...(request.research_name ? { researchName: request.research_name } : {}),
+    ...(request.run_id ? { runId: request.run_id } : {}),
+  });
   const discovered = discoverCompetitors({
     ...request,
     ...(request.min_competitors ? { min_competitors: request.min_competitors } : {}),

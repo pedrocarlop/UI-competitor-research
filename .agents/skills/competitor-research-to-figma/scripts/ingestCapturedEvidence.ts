@@ -182,7 +182,7 @@ export function ingestCapturedEvidence(
 async function main(): Promise<void> {
   const input = requireInput<EvidenceIngestRequest>(
     process.argv.slice(2),
-    "Usage: npm run ingest:evidence -- --input ./input/evidence-ingest.json --output ./runs/<timestamp>/imported-evidence.json",
+    "Usage: npm run ingest:evidence -- --input ./input/evidence-ingest.json --output ./runs/<research-slug>/<run-id>/imported-evidence.json",
   );
 
   assertSafeToProceed(input);
