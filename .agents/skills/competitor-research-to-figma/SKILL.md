@@ -80,13 +80,18 @@ Agent(model="haiku", prompt="<subagent prompt for mechanical steps>")
 
 #### Codex (OpenAI)
 
-Use custom agent TOML files in `.codex/agents/`. Each TOML defines a subagent role with a model and reasoning effort tier matched to task complexity. Spawn subagents by name in natural language (e.g., "Spawn an evidence-gatherer agent for each competitor"). Parallelism is controlled by `[agents] max_threads` in `config.toml` (default 6).
+Use custom agent TOML files in `.codex/agents/`. Each TOML defines a subagent role with a model and reasoning effort tier matched to task complexity. Prefer the exact Codex agent names below when spawning. Parallelism is controlled by `[agents] max_threads` in `config.toml` (default 6).
 
 Available agent definitions:
-- `market-researcher` — steps 2+3 (market context + discovery) — `gpt-5.4` / medium effort
-- `source-mapper` — step 4 (source map) — `gpt-5.4-mini` / low effort
-- `evidence-gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.4` / medium effort
-- `gap-documenter` — step 10 (unknowns) — `gpt-5.4-mini` / low effort
+- `market_researcher` — steps 2+3 (market context + discovery) — `gpt-5.4` / medium effort
+- `source_mapper` — step 4 (source map) — `gpt-5.4-mini` / low effort
+- `evidence_gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.4` / medium effort
+- `gap_documenter` — step 10 (unknowns) — `gpt-5.4-mini` / low effort
+
+Codex screenshot capture note:
+- The evidence-gathering agent must be able to write files. In `.codex/agents/evidence-gatherer.toml`, keep `sandbox_mode = "workspace-write"` so PNG assets can actually be persisted.
+- Do not instruct Codex to use `mcp__Claude_in_Chrome__*` or `mcp__computer-use__screenshot`; those are Claude-oriented examples and do not guarantee saved files in Codex.
+- When Codex needs persistent screenshots, prefer the bundled Playwright-backed scripts in this repo (`npm run check:setup`, `npm run capture`, `npm run run:research`) so captured images are written to disk and can be verified.
 
 #### Antigravity
 
@@ -276,6 +281,14 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
   SUBFEATURES: {subfeature_list_json}
 
   Return your findings as a single JSON object with keys: screenshots, pricing, sentiment, case_studies, evidence_notes, flow_reconstruction."
+
+- **Codex override:** When running this step in Codex, do not use the Claude-specific MCP instructions above as the primary screenshot path. Instead:
+  - Prefer the bundled Playwright workflow in this repository when screenshots must persist to disk:
+    - `npm run check:setup` to validate browser tooling
+    - `npm run capture -- --input <capture.json>` for targeted evidence capture
+    - `npm run run:research -- --input <research.json>` for end-to-end runs
+  - Only report screenshot paths that were actually written and verified on disk.
+  - If browser capture is unavailable, continue the research with public evidence and explicitly mark the screenshot as missing in the returned JSON rather than fabricating an asset path.
 
 ### 7. Analyze pricing models
 
@@ -561,6 +574,7 @@ Example themes: Architecture and deployment philosophy, Cart dynamics and itemiz
 - Consistent naming: `{competitor}-{source}-{topic}.png` (Note: for Antigravity, native WebP recordings are automatically saved to the artifacts directory and should be embedded instead of static PNGs)
 - Every image or recording must have a source URL and context note
 - Save all images to `output/assets/` (For Antigravity, reference the captured WebP artifacts)
+- In Codex, only claim an image was captured if the file exists on disk; prefer the bundled Playwright scripts over browser-read-only tool flows when persistent PNGs are required
 
 ## Analysis rules
 
