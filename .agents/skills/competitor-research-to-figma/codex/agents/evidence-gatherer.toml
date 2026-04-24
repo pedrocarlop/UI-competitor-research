@@ -38,7 +38,10 @@ Codex capture workflow preference:
   `npm run run:research -- --input <path-to-json>`.
 - If the user supplied credentials for this competitor, include only this
   competitor's credential entry via `credential_registry_path` or `credentials_path`.
-  Treat login as assisted authenticated capture: use a visible browser by default,
+  In Codex, authenticated web research using supplied email/password credentials
+  must use the `browser-use:browser` skill and the Codex in-app browser workflow
+  for the credentialed portion before any fallback browser-control path. Treat
+  login as assisted authenticated capture: use a visible browser by default,
   never bypass 2FA/CAPTCHA/OTP/SMS/email verification, hand control to the user
   for those checks, and resume only after the user confirms completion.
 - Save screenshots under the active research run directory's `output/assets/`

@@ -153,6 +153,7 @@ When using authenticated mode:
 - Follow the same evidence model and output format
 - Never fabricate credentials
 - Use credentials only for the matching competitor, never as a general credential pool
+- In Codex, any authenticated web research using supplied email/password credentials must use the `browser-use:browser` skill and the Codex in-app browser workflow for the credentialed portion before any fallback browser-control path.
 - Do not persist real passwords in run artifacts; redact credential payloads written to disk and prefer environment variables for secrets
 - Mask email/password inputs in screenshots captured during login
 - Fill only ordinary login fields and submit at most two automated attempts before manual handoff

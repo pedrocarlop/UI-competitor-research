@@ -118,6 +118,7 @@ Codex orchestration policy:
 Codex screenshot capture note:
 - The evidence-gathering agent must be able to write files. In `.codex/agents/evidence-gatherer.toml`, keep `sandbox_mode = "workspace-write"` so PNG assets can actually be persisted.
 - Do not instruct Codex to use `mcp__Claude_in_Chrome__*` or `mcp__computer-use__screenshot`; those are Claude-oriented examples and do not guarantee saved files in Codex.
+- When Codex web research uses supplied email/password credentials, use the `browser-use:browser` skill and its Codex in-app browser workflow for the credentialed portion before any fallback browser-control path. Read that skill, initialize Browser with the `iab` backend, keep the browser visible for assisted login, and follow its action-time safety rules for sensitive data.
 - Prefer the current Browser Use CLI (`browser-use`, latest verified: 0.12.6) when the environment exposes it for interactive browser inspection. Configure `BROWSER_USE_COMMAND` if the binary is installed under a non-default command.
 - When Codex needs persistent screenshots, prefer the bundled Playwright-backed scripts in this repo (`npm run check:setup`, `npm run capture`, `npm run run:research`) so captured images are written to disk and can be verified.
 - Public evidence capture is the default and must run before any authenticated lane. Competitors without credentials are still included through public feature, homepage, pricing, help, and docs sources when available.
@@ -320,6 +321,7 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
   Return your findings as a single JSON object with keys: screenshots, pricing, sentiment, case_studies, evidence_notes, flow_reconstruction."
 
 - **Codex override:** When running this step in Codex, do not use the Claude-specific MCP instructions above as the primary screenshot path. Instead:
+  - For any authenticated web research using supplied email/password credentials, use the `browser-use:browser` skill and the Codex in-app browser workflow for the credentialed portion before any fallback browser-control path.
   - Prefer the bundled Playwright workflow in this repository when screenshots must persist to disk:
     - `npm run check:setup` to validate browser tooling
     - `npm run source-map -- --input <source-map.json>` to generate a source-map artifact when using scripts directly
@@ -649,6 +651,7 @@ When using authenticated mode:
 - Never fabricate credentials
 - Never attempt account takeover
 - Use credentials only for the competitor(s) the user explicitly supplied
+- In Codex, any authenticated web research using supplied email/password credentials must use the `browser-use:browser` skill and the Codex in-app browser workflow for the credentialed portion before any fallback browser-control path.
 - Do not persist real passwords in run artifacts; redact credential payloads written to disk and prefer environment variables for secrets
 - Mask login inputs in screenshots captured during authenticated flows
 - Fill only ordinary login fields and submit at most two automated attempts before manual handoff

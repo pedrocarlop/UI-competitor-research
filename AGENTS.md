@@ -7,6 +7,7 @@ The installable skill lives in `.agents/skills/competitor-research-to-figma/` (l
 ## Principles
 
 - Default to public-evidence-first research. Do not treat login as the starting point.
+- In Codex, any web research that uses supplied email/password credentials must use the `browser-use:browser` skill and the Codex in-app browser workflow before falling back to another browser-control path.
 - Produce comprehensive markdown reports with screenshots, links, and structured findings.
 - Every finding must distinguish observed facts, inferences, and unknowns.
 - Capture screenshots systematically with consistent naming and source attribution.
