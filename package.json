@@ -10,8 +10,11 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test \".agents/skills/competitor-research-to-figma/scripts/*.test.ts\"",
+    "validate:schemas": "tsx .agents/skills/competitor-research-to-figma/scripts/validateSchemas.ts",
     "check:setup": "tsx .agents/skills/competitor-research-to-figma/scripts/checkSetup.ts",
     "discover": "tsx .agents/skills/competitor-research-to-figma/scripts/discoverCompetitors.ts",
+    "source-map": "tsx .agents/skills/competitor-research-to-figma/scripts/buildSourceMap.ts",
     "capture": "tsx .agents/skills/competitor-research-to-figma/scripts/captureCompetitorFlows.ts",
     "ingest:evidence": "tsx .agents/skills/competitor-research-to-figma/scripts/ingestCapturedEvidence.ts",
     "analyze": "tsx .agents/skills/competitor-research-to-figma/scripts/analyzeCapturedFlows.ts",

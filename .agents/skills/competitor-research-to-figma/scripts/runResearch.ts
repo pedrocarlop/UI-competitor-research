@@ -2,6 +2,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { analyzeRun } from "./analyzeCapturedFlows.js";
 import { captureDiscoveredCompetitors } from "./captureCompetitorFlows.js";
+import { buildSourceMap, writeSourceMap } from "./buildSourceMap.js";
 import { runSetupValidation } from "./checkSetup.js";
 import { discoverCompetitors } from "./discoverCompetitors.js";
 import { exportResearchToFigma } from "./exportResearchToFigma.js";
@@ -21,6 +22,7 @@ import {
   defaultFigmaExport,
   emptyCrossFindings,
   logSection,
+  normalizeResearchInput,
   nowIso,
   requireInput,
   slugify,
@@ -82,15 +84,20 @@ function buildStoredInput(request: RunResearchRequest): ResearchRun["input"] {
   const credentialRegistryPath = resolveCredentialRegistryPath(request);
   return buildStoredResearchInput({
     feature_description: request.feature_description,
+    ...(request.research_question ? { research_question: request.research_question } : {}),
     ...(request.research_name ? { research_name: request.research_name } : {}),
     ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
     ...(request.company_name ? { company_name: request.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
+    ...(request.credentials_path ? { credentials_path: request.credentials_path } : {}),
     ...(request.catalog_path ? { catalog_path: request.catalog_path } : {}),
     ...(request.resume_from_run_path ? { resume_from_run_path: request.resume_from_run_path } : {}),
     ...(request.competitor_allowlist ? { competitor_allowlist: request.competitor_allowlist } : {}),
+    ...(request.competitors ? { competitors: request.competitors } : {}),
+    ...(request.scope ? { scope: request.scope } : {}),
     ...(request.locale ? { locale: request.locale } : {}),
     ...(request.evidence_import_path ? { evidence_import_path: request.evidence_import_path } : {}),
+    ...(request.output_path ? { output_path: request.output_path } : {}),
   });
 }
 
@@ -99,46 +106,50 @@ function writeRun(run: ResearchRun): void {
 }
 
 export async function runResearch(request: RunResearchRequest): Promise<ResearchRun> {
-  assertSafeToProceed(request);
+  const normalizedRequest = normalizeResearchInput(request);
+  assertSafeToProceed(normalizedRequest);
 
-  const setup = await runSetupValidation(request.figma_destination_url);
+  const setup = await runSetupValidation(normalizedRequest.figma_destination_url);
   if (!setup.ok) {
     console.warn("Setup validation warning: some tooling is unavailable. The skill will proceed with available tools.");
   }
 
   const { runId, runDirectory } = createRunDirectory(process.cwd(), {
-    featureDescription: request.feature_description,
-    ...(request.research_name ? { researchName: request.research_name } : {}),
-    ...(request.run_id ? { runId: request.run_id } : {}),
+    featureDescription: normalizedRequest.feature_description,
+    ...(normalizedRequest.research_name ? { researchName: normalizedRequest.research_name } : {}),
+    ...(normalizedRequest.run_id ? { runId: normalizedRequest.run_id } : {}),
   });
   const discovered = discoverCompetitors({
-    ...request,
-    ...(request.min_competitors ? { min_competitors: request.min_competitors } : {}),
-    ...(request.max_competitors ? { max_competitors: request.max_competitors } : {}),
+    ...normalizedRequest,
+    ...(normalizedRequest.min_competitors ? { min_competitors: normalizedRequest.min_competitors } : {}),
+    ...(normalizedRequest.max_competitors ? { max_competitors: normalizedRequest.max_competitors } : {}),
   });
+  const sourceMap = buildSourceMap(normalizedRequest, discovered);
+  writeSourceMap(runDirectory, sourceMap);
 
   let run: ResearchRun = {
     run_id: runId,
     run_directory: runDirectory,
     started_at: nowIso(),
     updated_at: nowIso(),
-    input: buildStoredInput(request),
+    input: buildStoredInput(normalizedRequest),
     setup_validation: setup,
     discovered_competitors: discovered,
     included_competitors: [],
     excluded_competitors: [],
     captures: [],
     cross_competitor_findings: emptyCrossFindings(),
-    ...(request.figma_destination_url
-      ? { figma_export: defaultFigmaExport(request.figma_destination_url, runDirectory) }
+    source_map: sourceMap,
+    ...(normalizedRequest.figma_destination_url
+      ? { figma_export: defaultFigmaExport(normalizedRequest.figma_destination_url, runDirectory) }
       : {}),
     warnings: [],
     manual_intervention_checkpoints: [],
   };
   writeRun(run);
 
-  const importedEvidence = request.evidence_import_path
-    ? ingestCapturedEvidence(request.evidence_import_path, discovered, runDirectory)
+  const importedEvidence = normalizedRequest.evidence_import_path
+    ? ingestCapturedEvidence(normalizedRequest.evidence_import_path, discovered, runDirectory)
     : emptyImportedEvidenceResult();
 
   run = {
@@ -152,20 +163,25 @@ export async function runResearch(request: RunResearchRequest): Promise<Research
 
   const coveredSet = new Set(importedEvidence.covered_competitors.map((name) => slugify(name)));
   const remainingCompetitors = discovered.filter((competitor) => !coveredSet.has(slugify(competitor.competitor_name)));
-  const credentialRegistryPath = resolveCredentialRegistryPath(request);
+  const credentialRegistryPath = resolveCredentialRegistryPath(normalizedRequest);
 
   const liveCaptureRequest: CaptureRequest = {
-    feature_description: request.feature_description,
-    ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
+    feature_description: normalizedRequest.feature_description,
+    ...(normalizedRequest.research_question ? { research_question: normalizedRequest.research_question } : {}),
+    ...(normalizedRequest.figma_destination_url ? { figma_destination_url: normalizedRequest.figma_destination_url } : {}),
     discovered_competitors: remainingCompetitors,
-    ...(request.company_name ? { company_name: request.company_name } : {}),
+    source_map: sourceMap,
+    ...(normalizedRequest.company_name ? { company_name: normalizedRequest.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
     ...(credentialRegistryPath ? { credentials_path: credentialRegistryPath } : {}),
-    ...(request.catalog_path ? { catalog_path: request.catalog_path } : {}),
-    ...(request.resume_from_run_path ? { resume_from_run_path: request.resume_from_run_path } : {}),
-    ...(request.competitor_allowlist ? { competitor_allowlist: request.competitor_allowlist } : {}),
-    ...(request.locale ? { locale: request.locale } : {}),
-    ...(request.headless !== undefined ? { headless: request.headless } : {}),
+    ...(normalizedRequest.catalog_path ? { catalog_path: normalizedRequest.catalog_path } : {}),
+    ...(normalizedRequest.resume_from_run_path ? { resume_from_run_path: normalizedRequest.resume_from_run_path } : {}),
+    ...(normalizedRequest.competitor_allowlist ? { competitor_allowlist: normalizedRequest.competitor_allowlist } : {}),
+    ...(normalizedRequest.competitors ? { competitors: normalizedRequest.competitors } : {}),
+    ...(normalizedRequest.scope ? { scope: normalizedRequest.scope } : {}),
+    ...(normalizedRequest.locale ? { locale: normalizedRequest.locale } : {}),
+    ...(normalizedRequest.output_path ? { output_path: normalizedRequest.output_path } : {}),
+    ...(normalizedRequest.headless !== undefined ? { headless: normalizedRequest.headless } : {}),
   };
 
   const liveCaptureResult =
@@ -190,11 +206,11 @@ export async function runResearch(request: RunResearchRequest): Promise<Research
   run = analyzeRun(run);
   writeRun(run);
 
-  const reportPath = generateMarkdownReport(run);
+  const reportPath = generateMarkdownReport(run, normalizedRequest.output_path);
   logSection("Report Generated");
   console.log(`Markdown report written to: ${reportPath}`);
 
-  if (request.figma_destination_url) {
+  if (normalizedRequest.figma_destination_url) {
     run = exportResearchToFigma(run);
     writeRun(run);
   }

@@ -46,6 +46,9 @@
         "feature_description": {
           "type": "string"
         },
+        "research_question": {
+          "type": "string"
+        },
         "research_name": {
           "type": "string"
         },
@@ -57,6 +60,9 @@
           "type": "string"
         },
         "credential_registry_path": {
+          "type": "string"
+        },
+        "credentials_path": {
           "type": "string"
         },
         "catalog_path": {
@@ -72,10 +78,37 @@
             "minLength": 1
           }
         },
+        "competitors": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "required": ["competitor_name"],
+                "properties": {
+                  "competitor_name": { "type": "string" },
+                  "product_url": { "type": "string" },
+                  "login_url": { "type": "string" },
+                  "start_url": { "type": "string" },
+                  "product_category": { "type": "string" },
+                  "reason_for_inclusion": { "type": "string" },
+                  "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+                }
+              }
+            ]
+          }
+        },
+        "scope": {
+          "type": "string"
+        },
         "locale": {
           "type": "string"
         },
         "evidence_import_path": {
+          "type": "string"
+        },
+        "output_path": {
           "type": "string"
         }
       }
@@ -128,6 +161,9 @@
     },
     "market_context": {
       "$ref": "#/$defs/marketContext"
+    },
+    "source_map": {
+      "$ref": "#/$defs/sourceMap"
     },
     "citations": {
       "type": "array",
@@ -311,6 +347,18 @@
           "items": {
             "$ref": "#/$defs/developerDiscourseEntry"
           }
+        },
+        "source_map_entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceMapEntry"
+          }
+        },
+        "evidence_records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/evidenceRecord"
+          }
         }
       }
     },
@@ -442,6 +490,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "designer_product_analysis": {
+          "$ref": "#/$defs/designerProductAnalysis"
         }
       }
     },
@@ -502,6 +553,18 @@
           "type": "array",
           "items": {
             "$ref": "#/$defs/thematicDeepDive"
+          }
+        },
+        "opportunities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknowns": {
+          "type": "array",
+          "items": {
+            "type": "string"
           }
         }
       }
@@ -745,7 +808,7 @@
     },
     "regionalAnalysis": {
       "type": "object",
-      "required": ["locale", "market_overview", "dominant_payment_methods", "regulatory_contexts", "competitor_coverage", "evidence_urls"],
+      "required": ["locale", "market_overview", "dominant_local_platforms", "regulatory_contexts", "competitor_coverage", "evidence_urls"],
       "properties": {
         "locale": { "type": "string" },
         "market_overview": { "type": "string" },
@@ -754,6 +817,65 @@
         "locale_specific_pricing": { "type": "string" },
         "competitor_coverage": { "type": "object", "additionalProperties": { "type": "string" } },
         "evidence_urls": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "sourceMap": {
+      "type": "object",
+      "required": ["generated_at", "entries"],
+      "properties": {
+        "generated_at": { "type": "string", "format": "date-time" },
+        "entries": { "type": "array", "items": { "$ref": "#/$defs/sourceMapEntry" } }
+      }
+    },
+    "sourceMapEntry": {
+      "type": "object",
+      "required": ["competitor_name", "source_type", "url", "notes", "confidence", "discovered_via"],
+      "properties": {
+        "competitor_name": { "type": "string" },
+        "source_type": { "type": "string", "enum": ["homepage", "feature_page", "pricing", "help_center", "docs", "changelog", "app_store", "video", "reviews", "forum", "case_study", "news", "other"] },
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "notes": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "discovered_via": { "type": "string", "enum": ["explicit_input", "catalog", "heuristic", "public_navigation", "agent"] }
+      }
+    },
+    "evidenceRecord": {
+      "type": "object",
+      "required": ["id", "competitor_name", "source_type", "source_url", "observed_at", "observed_fact", "confidence"],
+      "properties": {
+        "id": { "type": "string" },
+        "competitor_name": { "type": "string" },
+        "source_type": { "type": "string" },
+        "source_url": { "type": "string" },
+        "source_title": { "type": "string" },
+        "screenshot_path": { "type": "string" },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "observed_fact": { "type": "string" },
+        "inference": { "type": "string" },
+        "unknown": { "type": "string" },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] }
+      }
+    },
+    "designerProductAnalysis": {
+      "type": "object",
+      "required": ["use_cases", "entry_points", "navigation_model", "navigation_depth", "ui_patterns", "key_states", "empty_states", "error_states", "edge_states", "affordances", "constraints", "tier_or_permission_gates", "friction_points", "reusable_ideas", "unknowns"],
+      "properties": {
+        "use_cases": { "type": "array", "items": { "type": "string" } },
+        "entry_points": { "type": "array", "items": { "type": "string" } },
+        "navigation_model": { "type": "array", "items": { "type": "string" } },
+        "navigation_depth": { "type": "array", "items": { "type": "string" } },
+        "ui_patterns": { "type": "array", "items": { "type": "string" } },
+        "key_states": { "type": "array", "items": { "type": "string" } },
+        "empty_states": { "type": "array", "items": { "type": "string" } },
+        "error_states": { "type": "array", "items": { "type": "string" } },
+        "edge_states": { "type": "array", "items": { "type": "string" } },
+        "affordances": { "type": "array", "items": { "type": "string" } },
+        "constraints": { "type": "array", "items": { "type": "string" } },
+        "tier_or_permission_gates": { "type": "array", "items": { "type": "string" } },
+        "friction_points": { "type": "array", "items": { "type": "string" } },
+        "reusable_ideas": { "type": "array", "items": { "type": "string" } },
+        "unknowns": { "type": "array", "items": { "type": "string" } }
       }
     }
   }

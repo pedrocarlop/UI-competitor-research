@@ -21,9 +21,17 @@ interactive browser inspection; set `BROWSER_USE_COMMAND` if the binary uses a
 custom command name.
 When persistent screenshots are required, prefer the bundled Playwright workflow
 in this repository so PNGs are actually written to disk.
+Public capture is the default lane: every included competitor should get public
+feature, homepage, pricing, help, or docs evidence before any authenticated work.
+Credentials are additive and must never be treated as a requirement for inclusion.
+Use the run's `source-map.json` when present and return normalized
+`evidence_records` for observed facts, screenshot paths, inferences, unknowns,
+and confidence.
 
 Codex capture workflow preference:
 - If browser tooling availability is unclear, run `npm run check:setup`.
+- To create a public source-map artifact directly, run
+  `npm run source-map -- --input <path-to-json>`.
 - For targeted capture, prepare a JSON input file and run
   `npm run capture -- --input <path-to-json>`.
 - For end-to-end capture plus report generation, prepare a JSON input file and run
@@ -63,5 +71,6 @@ For each subfeature provided, note whether the competitor supports it
 (supported/partial/not_supported/unknown) with evidence.
 
 Return findings as a single JSON object with keys:
-screenshots, pricing, sentiment, case_studies, evidence_notes, flow_reconstruction.
+screenshots, source_map_entries, evidence_records, pricing, sentiment,
+case_studies, evidence_notes, flow_reconstruction.
 """

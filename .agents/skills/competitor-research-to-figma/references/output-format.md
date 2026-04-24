@@ -11,6 +11,7 @@ runs/
     AGENTS.md
     <run-id>/
       AGENTS.md
+      source-map.json
       output/
         assets/
           {competitor}-{source}-{topic}.png
@@ -20,6 +21,8 @@ runs/
 ```
 
 The `AGENTS.md` files are context-isolation hooks. They remind agents that older sibling runs must not be read or used when starting a new run unless the user explicitly requested resume, audit, comparison, or import.
+
+`source-map.json` records the public source candidates attempted before capture. Public source coverage is part of the run contract and does not require credentials.
 
 ## Screenshot naming
 
@@ -113,8 +116,14 @@ How the competitor positions this feature. Target audience. Key messaging.
 #### Key screenshots with source links
 Embedded screenshot references with source URLs and context notes.
 
+#### Source coverage and evidence records
+List the mapped public sources attempted and normalized evidence records. Each evidence record distinguishes observed fact, inference, unknown, confidence, source URL, observed date, and screenshot path when available.
+
 #### Task flows and user journeys
 Reconstructed flows from help center guides, video walkthroughs, app store screenshots, or direct observation. Step-by-step with screenshots where available.
+
+#### Product and UX analysis
+Document use cases, entry points, navigation model/depth, UI patterns, key states, empty/error/edge states, affordances, constraints, tier or permission gates, friction, reusable ideas, and unknowns.
 
 #### Case studies (if available)
 Named customer examples showing real-world use of the competitor's feature. For each case study, include the customer name, what they used the feature for, and any measurable outcome (e.g., conversion lift, time savings, adoption metrics). Cite the source.

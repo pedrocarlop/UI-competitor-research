@@ -26,14 +26,14 @@ Trigger this skill when the user asks to:
 ## Required inputs
 
 The skill must not run without:
-- `research_question` — a clear description of what to benchmark (also accepted as `feature_description`)
+- `research_question` — a clear description of what to benchmark (also accepted as `feature_description`; the scripts normalize both names into the stored `feature_description`)
 
 If the research question is missing, ask for it first. Do not proceed without it.
 
 ## Optional inputs
 
 - `company_name` — the user's company, to exclude from competitor lists
-- `competitors` — explicit list of competitors to include
+- `competitors` — explicit list of competitors to include. Entries may be strings or objects with `competitor_name`, `product_url`, `login_url`, `start_url`, `product_category`, `reason_for_inclusion`, and `confidence`.
 - `scope` — specific sources or areas to focus on (e.g., "pricing pages only", "help center articles")
 - `research_name` — short label used to name the run directory (defaults to a slug derived from `research_question`)
 - `output_path` — where to write the report (defaults to `./runs/<research-name>/<run-id>/output/`)
@@ -120,6 +120,8 @@ Codex screenshot capture note:
 - Do not instruct Codex to use `mcp__Claude_in_Chrome__*` or `mcp__computer-use__screenshot`; those are Claude-oriented examples and do not guarantee saved files in Codex.
 - Prefer the current Browser Use CLI (`browser-use`, latest verified: 0.12.6) when the environment exposes it for interactive browser inspection. Configure `BROWSER_USE_COMMAND` if the binary is installed under a non-default command.
 - When Codex needs persistent screenshots, prefer the bundled Playwright-backed scripts in this repo (`npm run check:setup`, `npm run capture`, `npm run run:research`) so captured images are written to disk and can be verified.
+- Public evidence capture is the default and must run before any authenticated lane. Competitors without credentials are still included through public feature, homepage, pricing, help, and docs sources when available.
+- Each run writes a `source-map.json` artifact before capture. Use it to track homepage, feature page, pricing, help/docs, changelog, app store, video, review/forum, case study, and news candidates.
 - When a credential registry is provided, use assisted authenticated capture for only the matching competitor(s). Run with a visible browser by default unless the user or environment explicitly requests headless mode. If 2FA, OTP, SMS/email verification, CAPTCHA, bot checks, or similar barriers appear, pause automation, tell the user what happened, let the user complete the challenge in the visible browser, then resume capture after the user confirms. Never bypass those barriers.
 
 #### Antigravity
@@ -203,7 +205,7 @@ For each competitor, record:
 - Why it is relevant to the research question
 - Confidence level (high / medium / low)
 
-If the user provides a `competitors` list, use it directly and skip discovery.
+If the user provides a `competitors` list, use it directly and skip discovery. If only names are provided, infer a likely homepage URL but mark the source-map confidence accordingly until public evidence verifies the URL.
 
 Prefer competitors with mature, publicly documented products. Avoid selecting the user's own company when `company_name` is provided.
 
@@ -269,6 +271,8 @@ For each competitor, visit the mapped sources and:
   - Examples: `stripe-pricing-tier-comparison.png`, `square-helpcenter-payment-links.png`
 - Save screenshots to the active run directory's `output/assets/`
 
+Public capture must not require credentials. Capture public feature pages, pricing pages, help/docs pages, and homepage evidence for every included competitor before attempting authenticated capture. Authenticated capture is additive and must never exclude competitors that lack credentials.
+
 Where possible, reconstruct task flows and user journeys from:
 - Help center step-by-step guides
 - YouTube demo walkthroughs
@@ -288,6 +292,8 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
 - **Optional authenticated input:** A matching credential entry for this specific competitor, when the user provided one. Do not pass credentials to unrelated competitors.
 - **Output:** A structured JSON bundle containing:
   - `screenshots[]` — array of `{"path": "...", "source_url": "...", "context_note": "..."}` saved to the active run directory's `output/assets/`
+  - `source_map_entries[]` — public sources attempted for that competitor
+  - `evidence_records[]` — normalized observed facts with source URL, screenshot path when available, observed date, inference boundary, unknowns, and confidence
   - `pricing` — `{"pricing_model": "...", "tiers": [...], "cost_breakdowns": [...], "operational_fees": [...], "notable_strategies": [...], "enterprise_available": bool, "confidence": "..."}`
   - `sentiment` — `{"overall_direction": "...", "top_praised": [...], "top_criticized": [...], "notable_quotes": [...], "sources": [...]}`
   - `case_studies[]` — `[{"company_name": "...", "use_case": "...", "outcome": "...", "source_url": "...", "source_type": "..."}]`
@@ -316,6 +322,7 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
 - **Codex override:** When running this step in Codex, do not use the Claude-specific MCP instructions above as the primary screenshot path. Instead:
   - Prefer the bundled Playwright workflow in this repository when screenshots must persist to disk:
     - `npm run check:setup` to validate browser tooling
+    - `npm run source-map -- --input <source-map.json>` to generate a source-map artifact when using scripts directly
     - `npm run capture -- --input <capture.json>` for targeted evidence capture, including assisted authenticated capture when `credential_registry_path` is present
     - `npm run run:research -- --input <research.json>` for end-to-end runs
   - Only report screenshot paths that were actually written and verified on disk.
@@ -446,7 +453,9 @@ Write `<run_directory>/output/research.md` with these sections (for Antigravity,
 8. **Per-competitor deep dives** — for each competitor:
    - Overview and positioning
    - Key screenshots with source links
+   - Source coverage and normalized evidence records
    - Task flows and user journeys
+   - Product/UX analysis: use cases, entry points, navigation, UI patterns, key states, affordances, constraints, tier/permission gates, friction, reusable ideas, and unknowns
    - Case studies (if any named customer examples were found)
    - Pricing model summary with per-method fee breakdowns
    - Strengths (with evidence and inline citations)

@@ -6,6 +6,30 @@ export type ConfidenceLevel = "high" | "medium" | "low";
 export type CaptureStatus = "captured" | "partial" | "excluded" | "blocked";
 export type ExportStatus = "planned" | "exported" | "skipped";
 export type VerificationLevel = "missing" | "detected" | "verified";
+export type SourceType =
+  | "homepage"
+  | "feature_page"
+  | "pricing"
+  | "help_center"
+  | "docs"
+  | "changelog"
+  | "app_store"
+  | "video"
+  | "reviews"
+  | "forum"
+  | "case_study"
+  | "news"
+  | "other";
+
+export interface ExplicitCompetitorInput {
+  competitor_name: string;
+  product_url?: string;
+  login_url?: string;
+  start_url?: string;
+  product_category?: string;
+  reason_for_inclusion?: string;
+  confidence?: ConfidenceLevel;
+}
 
 export interface CredentialEntryInput {
   competitor_name: string;
@@ -55,15 +79,20 @@ export interface SetupValidationResult {
 
 export interface ResearchInput {
   feature_description: string;
+  research_question?: string;
   research_name?: string;
   figma_destination_url?: string;
   company_name?: string;
   credential_registry_path?: string;
+  credentials_path?: string;
   catalog_path?: string;
   resume_from_run_path?: string;
   competitor_allowlist?: string[];
+  competitors?: Array<string | ExplicitCompetitorInput>;
+  scope?: string;
   locale?: string;
   evidence_import_path?: string;
+  output_path?: string;
 }
 
 export interface DiscoveredCompetitor {
@@ -100,6 +129,53 @@ export interface CaptureStep {
   visible_text_snippets?: string[];
 }
 
+export interface SourceMapEntry {
+  competitor_name: string;
+  source_type: SourceType;
+  url: string;
+  title?: string;
+  notes: string;
+  confidence: ConfidenceLevel;
+  discovered_via: "explicit_input" | "catalog" | "heuristic" | "public_navigation" | "agent";
+}
+
+export interface SourceMap {
+  generated_at: string;
+  entries: SourceMapEntry[];
+}
+
+export interface EvidenceRecord {
+  id: string;
+  competitor_name: string;
+  source_type: SourceType;
+  source_url: string;
+  source_title?: string;
+  screenshot_path?: string;
+  observed_at: string;
+  observed_fact: string;
+  inference?: string;
+  unknown?: string;
+  confidence: ConfidenceLevel;
+}
+
+export interface DesignerProductAnalysis {
+  use_cases: string[];
+  entry_points: string[];
+  navigation_model: string[];
+  navigation_depth: string[];
+  ui_patterns: string[];
+  key_states: string[];
+  empty_states: string[];
+  error_states: string[];
+  edge_states: string[];
+  affordances: string[];
+  constraints: string[];
+  tier_or_permission_gates: string[];
+  friction_points: string[];
+  reusable_ideas: string[];
+  unknowns: string[];
+}
+
 export interface CompetitorAnalysis {
   experience_summary: string;
   step_reconstruction: string[];
@@ -113,6 +189,7 @@ export interface CompetitorAnalysis {
   design_patterns?: string[];
   information_architecture?: string[];
   unique_differentiators?: string[];
+  designer_product_analysis?: DesignerProductAnalysis;
 }
 
 export interface CompetitorCapture {
@@ -128,6 +205,8 @@ export interface CompetitorCapture {
   pricing?: CompetitorPricing;
   case_studies?: CaseStudy[];
   developer_discourse?: DeveloperDiscourseEntry[];
+  source_map_entries?: SourceMapEntry[];
+  evidence_records?: EvidenceRecord[];
 }
 
 export interface ThematicDeepDive {
@@ -149,6 +228,8 @@ export interface CrossCompetitorFindings {
   strategic_thesis?: string;
   strategic_narrative?: string;
   thematic_deep_dives?: ThematicDeepDive[];
+  opportunities?: string[];
+  unknowns?: string[];
 }
 
 export interface FigmaLayoutStep {
@@ -226,6 +307,7 @@ export interface ResearchRun {
   cross_competitor_findings: CrossCompetitorFindings;
   figma_export?: FigmaExportMetadata;
   market_context?: MarketContext;
+  source_map?: SourceMap;
   citations?: InlineCitation[];
   warnings: string[];
   manual_intervention_checkpoints: ManualInterventionCheckpoint[];
@@ -238,6 +320,7 @@ export interface DiscoveryRequest extends ResearchInput {
 
 export interface CaptureRequest extends ResearchInput {
   discovered_competitors: DiscoveredCompetitor[];
+  source_map?: SourceMap;
   credentials?: CredentialRegistryInput;
   credentials_path?: string;
   run_id?: string;
@@ -448,6 +531,23 @@ export function requireInput<T>(argv: string[], help: string): T {
   return readJsonFile<T>(inputPath);
 }
 
+export function normalizeResearchInput<T extends Partial<ResearchInput>>(input: T): T & ResearchInput {
+  const featureDescription =
+    isNonEmptyString(input.feature_description)
+      ? input.feature_description.trim()
+      : isNonEmptyString(input.research_question)
+        ? input.research_question.trim()
+        : "";
+
+  return {
+    ...input,
+    feature_description: featureDescription,
+    ...(isNonEmptyString(input.research_question)
+      ? { research_question: input.research_question.trim() }
+      : { research_question: featureDescription }),
+  } as T & ResearchInput;
+}
+
 export function writeJsonFile(filePath: string, value: unknown): void {
   ensureDir(path.dirname(filePath));
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
@@ -587,8 +687,8 @@ export function isNonEmptyStringArray(value: unknown): value is string[] {
 
 export function validateMandatoryInputs(input: Partial<ResearchInput>): string[] {
   const missing: string[] = [];
-  if (!isNonEmptyString(input.feature_description)) {
-    missing.push("feature_description");
+  if (!isNonEmptyString(input.feature_description) && !isNonEmptyString(input.research_question)) {
+    missing.push("feature_description or research_question");
   }
   return missing;
 }
@@ -722,7 +822,7 @@ export function assertSafeToProceed(input: Partial<ResearchInput>): void {
   const missing = validateMandatoryInputs(input);
   if (missing.length > 0) {
     throw new Error(
-      `Missing mandatory input: ${missing.join(", ")}.\nProvide feature_description before running setup validation, discovery, capture, or export.`,
+      `Missing mandatory input: ${missing.join(", ")}.\nProvide feature_description or research_question before running setup validation, discovery, capture, or export.`,
     );
   }
 }
@@ -738,6 +838,27 @@ export function emptyAnalysis(): CompetitorAnalysis {
     friction_points: [],
     reusable_ideas: [],
     caveats: [],
+    designer_product_analysis: emptyDesignerProductAnalysis(),
+  };
+}
+
+export function emptyDesignerProductAnalysis(): DesignerProductAnalysis {
+  return {
+    use_cases: [],
+    entry_points: [],
+    navigation_model: [],
+    navigation_depth: [],
+    ui_patterns: [],
+    key_states: [],
+    empty_states: [],
+    error_states: [],
+    edge_states: [],
+    affordances: [],
+    constraints: [],
+    tier_or_permission_gates: [],
+    friction_points: [],
+    reusable_ideas: [],
+    unknowns: [],
   };
 }
 
@@ -762,16 +883,22 @@ export function defaultFigmaExport(destinationUrl: string, runDirectory: string)
 }
 
 export function buildStoredResearchInput(input: ResearchInput): ResearchInput {
+  const normalized = normalizeResearchInput(input);
   return {
-    feature_description: input.feature_description,
-    ...(input.research_name ? { research_name: input.research_name } : {}),
-    ...(input.figma_destination_url ? { figma_destination_url: input.figma_destination_url } : {}),
-    ...(input.company_name ? { company_name: input.company_name } : {}),
-    ...(input.credential_registry_path ? { credential_registry_path: input.credential_registry_path } : {}),
-    ...(input.catalog_path ? { catalog_path: input.catalog_path } : {}),
-    ...(input.resume_from_run_path ? { resume_from_run_path: input.resume_from_run_path } : {}),
-    ...(input.competitor_allowlist ? { competitor_allowlist: input.competitor_allowlist } : {}),
-    ...(input.locale ? { locale: input.locale } : {}),
-    ...(input.evidence_import_path ? { evidence_import_path: input.evidence_import_path } : {}),
+    feature_description: normalized.feature_description,
+    research_question: normalized.research_question ?? normalized.feature_description,
+    ...(normalized.research_name ? { research_name: normalized.research_name } : {}),
+    ...(normalized.figma_destination_url ? { figma_destination_url: normalized.figma_destination_url } : {}),
+    ...(normalized.company_name ? { company_name: normalized.company_name } : {}),
+    ...(normalized.credential_registry_path ? { credential_registry_path: normalized.credential_registry_path } : {}),
+    ...(normalized.credentials_path ? { credentials_path: normalized.credentials_path } : {}),
+    ...(normalized.catalog_path ? { catalog_path: normalized.catalog_path } : {}),
+    ...(normalized.resume_from_run_path ? { resume_from_run_path: normalized.resume_from_run_path } : {}),
+    ...(normalized.competitor_allowlist ? { competitor_allowlist: normalized.competitor_allowlist } : {}),
+    ...(normalized.competitors ? { competitors: normalized.competitors } : {}),
+    ...(normalized.scope ? { scope: normalized.scope } : {}),
+    ...(normalized.locale ? { locale: normalized.locale } : {}),
+    ...(normalized.evidence_import_path ? { evidence_import_path: normalized.evidence_import_path } : {}),
+    ...(normalized.output_path ? { output_path: normalized.output_path } : {}),
   };
 }

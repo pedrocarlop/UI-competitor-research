@@ -71,7 +71,7 @@ Keep credential files outside version control. Never commit real passwords. Pref
 ### Optional inputs
 
 - `company_name` — your company, to exclude from competitor lists
-- `competitors` — explicit list of competitors to include
+- `competitors` — explicit list of competitors to include. Use strings for names or objects with `competitor_name` and optional `product_url`.
 - `scope` — specific sources or areas to focus on
 - `research_name` — short label used to name the run directory (defaults to a slug derived from the research question)
 - `output_path` — where to write the report (defaults to `./runs/<research-name>/<run-id>/output/`)
@@ -100,6 +100,7 @@ runs/
     AGENTS.md
     <run-id>/
       AGENTS.md
+      source-map.json
       output/
         assets/
           {competitor}-{source}-{topic}.png
@@ -109,6 +110,8 @@ runs/
 ```
 
 The `AGENTS.md` files are generated context-isolation hooks. They keep future agents from using older sibling runs as starting context unless the user explicitly requests resume, audit, comparison, or import.
+
+Default runs are public-first: competitors are not excluded just because credentials are missing. Public feature, homepage, pricing, help, and documentation evidence is captured first; authenticated capture is only added for competitors with explicit credential entries.
 
 See the [README](./README.md) for the full output format and evidence model.
 

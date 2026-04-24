@@ -3,10 +3,13 @@ import {
   ConfidenceLevel,
   DiscoveredCompetitor,
   DiscoveryRequest,
+  ExplicitCompetitorInput,
   assertSafeToProceed,
   dedupe,
+  isNonEmptyString,
   logSection,
   namesMatch,
+  normalizeResearchInput,
   nowIso,
   parseArgs,
   readJsonFile,
@@ -51,9 +54,9 @@ export interface DiscoveryResult {
   discovery_queries?: string[];
 }
 
-// Built-in catalog serves as a seed for payments-related queries.
-// For other domains, the skill prompt instructs the LLM to use web search
-// and pass results via competitor_allowlist or discovered_competitors_path.
+// Built-in catalog serves as a seed for payments-related queries. Explicit
+// competitors bypass the catalog; other domains receive discovery queries for
+// the orchestrator or platform-native web tools to resolve.
 const PAYMENTS_CATALOG: CompetitorCatalogEntry[] = [
   {
     competitor_name: "Stripe",
@@ -168,6 +171,67 @@ function loadCatalog(catalogPath?: string): CompetitorCatalogEntry[] {
   return catalog.competitors;
 }
 
+function normalizeExplicitCompetitor(input: string | ExplicitCompetitorInput): ExplicitCompetitorInput {
+  if (typeof input === "string") {
+    return { competitor_name: input };
+  }
+  return input;
+}
+
+function inferUrlFromName(name: string): string {
+  const trimmed = name.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const compact = trimmed
+    .toLowerCase()
+    .replace(/^www\./, "")
+    .replace(/[^a-z0-9.]+/g, "");
+
+  if (compact.includes(".")) {
+    return `https://www.${compact}`;
+  }
+
+  return `https://www.${compact}.com`;
+}
+
+function inferLoginUrl(productUrl: string, explicitLoginUrl?: string): string {
+  if (isNonEmptyString(explicitLoginUrl)) {
+    return explicitLoginUrl;
+  }
+  try {
+    return `${new URL(productUrl).origin}/login`;
+  } catch {
+    return productUrl;
+  }
+}
+
+function discoverExplicitCompetitors(request: DiscoveryRequest): DiscoveredCompetitor[] | undefined {
+  if (!request.competitors || request.competitors.length === 0) {
+    return undefined;
+  }
+
+  return request.competitors
+    .map(normalizeExplicitCompetitor)
+    .filter((competitor) => !isCompanyExclusion(competitor.competitor_name, request.company_name))
+    .map((competitor) => {
+      const productUrl = competitor.product_url ?? inferUrlFromName(competitor.competitor_name);
+      return {
+        competitor_name: competitor.competitor_name,
+        product_url: productUrl,
+        login_url: inferLoginUrl(productUrl, competitor.login_url),
+        ...(competitor.start_url ? { start_url: competitor.start_url } : {}),
+        reason_for_inclusion:
+          competitor.reason_for_inclusion ??
+          "Explicitly supplied by the user for this research run.",
+        confidence: competitor.confidence ?? "high",
+        product_category: competitor.product_category ?? "explicit",
+        keyword_matches: [],
+      };
+    });
+}
+
 function normalizeLocale(locale: string): string {
   return locale.trim().toLowerCase();
 }
@@ -263,19 +327,25 @@ function buildDiscoveryQueries(featureDescription: string): string[] {
 }
 
 export function discoverCompetitors(request: DiscoveryRequest): DiscoveredCompetitor[] {
-  assertSafeToProceed(request);
-  const catalog = loadCatalog(request.catalog_path);
-  const featureTokens = tokenize(request.feature_description);
-  const allowlist = toSlugSet(request.competitor_allowlist ?? []);
+  const normalized = normalizeResearchInput(request);
+  assertSafeToProceed(normalized);
+  const explicitCompetitors = discoverExplicitCompetitors(normalized);
+  if (explicitCompetitors) {
+    return explicitCompetitors;
+  }
+
+  const catalog = loadCatalog(normalized.catalog_path);
+  const featureTokens = tokenize(normalized.feature_description);
+  const allowlist = toSlugSet(normalized.competitor_allowlist ?? []);
   const allowlistIsActive = allowlist.size > 0;
-  const minCompetitors = request.min_competitors ?? 5;
-  const maxCompetitors = request.max_competitors ?? 8;
+  const minCompetitors = normalized.min_competitors ?? 5;
+  const maxCompetitors = normalized.max_competitors ?? 8;
 
   const ranked = catalog
-    .filter((entry) => !isCompanyExclusion(entry.competitor_name, request.company_name))
+    .filter((entry) => !isCompanyExclusion(entry.competitor_name, normalized.company_name))
     .filter((entry) => !allowlistIsActive || allowlist.has(slugify(entry.competitor_name)))
     .map((entry) => {
-      const resolvedEntry = resolveCatalogEntry(entry, request.locale);
+      const resolvedEntry = resolveCatalogEntry(entry, normalized.locale);
       const keywordMatches = resolvedEntry.keywords.filter((keyword) => featureTokens.includes(keyword));
       const score = keywordMatches.length;
       return {
@@ -318,7 +388,12 @@ export function discoverCompetitors(request: DiscoveryRequest): DiscoveredCompet
  * for the LLM to execute when the catalog does not cover the research domain.
  */
 export function discoverCompetitorsWithQueries(request: DiscoveryRequest): DiscoveryResult {
-  const competitors = discoverCompetitors(request);
+  const normalized = normalizeResearchInput(request);
+  const competitors = discoverCompetitors(normalized);
+
+  if (normalized.competitors && normalized.competitors.length > 0) {
+    return { competitors };
+  }
 
   // If the catalog produced enough matches with keyword overlap, return them
   const hasStrongMatches = competitors.some(
@@ -332,15 +407,15 @@ export function discoverCompetitorsWithQueries(request: DiscoveryRequest): Disco
   // Otherwise, also return discovery queries for the LLM to use with web search
   return {
     competitors,
-    discovery_queries: buildDiscoveryQueries(request.feature_description),
+    discovery_queries: buildDiscoveryQueries(normalized.feature_description),
   };
 }
 
 async function main(): Promise<void> {
-  const input = requireInput<DiscoveryRequest>(
+  const input = normalizeResearchInput(requireInput<DiscoveryRequest>(
     process.argv.slice(2),
     "Usage: npm run discover -- --input ./input/discovery.json --output ./runs/discovery.json",
-  );
+  ));
   const args = parseArgs(process.argv.slice(2));
   const result = discoverCompetitorsWithQueries(input);
   const outputPath = args.output;

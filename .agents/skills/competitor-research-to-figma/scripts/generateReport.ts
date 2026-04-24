@@ -2,17 +2,11 @@ import { copyFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+  EvidenceRecord,
   ResearchRun,
-  RegionalAnalysis,
-  ThematicDeepDive,
-  CaseStudy,
-  InlineCitation,
-  CostBreakdown,
   ensureDir,
   logSection,
   requireInput,
-  slugify,
-  writeJsonFile,
 } from "./_shared.js";
 import { writeFileSync } from "node:fs";
 
@@ -188,6 +182,25 @@ function renderMethodology(run: ResearchRun): string {
   if (browserOk) {
     lines.push("Browser automation was used for screenshot capture where available.", "");
   }
+  if (run.source_map) {
+    lines.push(`A source map with ${run.source_map.entries.length} public source candidates was generated before capture.`, "");
+  }
+  lines.push("All interpretive findings distinguish direct observations from inferred implications where evidence is incomplete.", "");
+  return lines.join("\n");
+}
+
+function renderSourceMap(run: ResearchRun): string {
+  if (!run.source_map || run.source_map.entries.length === 0) {
+    return "";
+  }
+
+  const lines: string[] = ["## Source Map", ""];
+  lines.push("| Competitor | Source type | URL | Confidence | Notes |");
+  lines.push("|---|---|---|---|---|");
+  for (const source of run.source_map.entries) {
+    lines.push(`| ${source.competitor_name} | ${source.source_type} | ${source.url} | ${source.confidence} | ${source.notes} |`);
+  }
+  lines.push("");
   return lines.join("\n");
 }
 
@@ -248,6 +261,14 @@ function renderCompetitorDeepDive(
     lines.push(`**Status:** ${capture.status}`, "");
     lines.push(`**Summary:** ${capture.analysis.experience_summary}`, "");
 
+    if (capture.source_map_entries && capture.source_map_entries.length > 0) {
+      lines.push("#### Source Coverage", "");
+      for (const source of capture.source_map_entries) {
+        lines.push(`- ${source.source_type}: ${source.url} (${source.confidence})`);
+      }
+      lines.push("");
+    }
+
     // Task flow
     if (capture.steps.length > 0) {
       lines.push("#### Task Flow", "");
@@ -260,6 +281,36 @@ function renderCompetitorDeepDive(
         lines.push(`- URL: ${step.url}`);
         lines.push("");
       }
+    }
+
+    const designer = capture.analysis.designer_product_analysis;
+    if (designer) {
+      lines.push("#### Product and UX Analysis", "");
+      lines.push(`- **Use cases:** ${designer.use_cases.join("; ")}`);
+      lines.push(`- **Entry points:** ${designer.entry_points.slice(0, 4).join("; ")}`);
+      lines.push(`- **Navigation model:** ${designer.navigation_model.join("; ")}`);
+      lines.push(`- **UI patterns:** ${designer.ui_patterns.join("; ")}`);
+      lines.push(`- **Key states:** ${designer.key_states.slice(0, 5).join("; ")}`);
+      lines.push(`- **Affordances:** ${designer.affordances.join("; ")}`);
+      lines.push(`- **Constraints:** ${designer.constraints.join("; ")}`);
+      lines.push(`- **Tier or permission gates:** ${designer.tier_or_permission_gates.join("; ")}`);
+      lines.push(`- **Unknowns:** ${designer.unknowns.join("; ")}`);
+      lines.push("");
+    }
+
+    if (capture.evidence_records && capture.evidence_records.length > 0) {
+      lines.push("#### Evidence Records", "");
+      for (const evidence of capture.evidence_records) {
+        const screenshot = evidence.screenshot_path ? ` Screenshot: assets/${path.basename(evidence.screenshot_path)}.` : "";
+        lines.push(`- **Observed:** ${evidence.observed_fact} Source: ${evidence.source_url}.${screenshot} Confidence: ${evidence.confidence}.`);
+        if (evidence.inference) {
+          lines.push(`  - **Inference:** ${evidence.inference}`);
+        }
+        if (evidence.unknown) {
+          lines.push(`  - **Unknown:** ${evidence.unknown}`);
+        }
+      }
+      lines.push("");
     }
 
     // Strengths
@@ -365,6 +416,57 @@ function renderCompetitorDeepDive(
   return lines.join("\n");
 }
 
+function renderPricingComparison(run: ResearchRun): string {
+  const priced = run.captures.filter((capture) => capture.pricing);
+  const lines: string[] = ["## Pricing Comparison", ""];
+  if (priced.length === 0) {
+    lines.push("No structured public pricing data was extracted automatically. Pricing pages captured in the evidence section should be reviewed manually before making pricing claims.", "");
+    return lines.join("\n");
+  }
+
+  lines.push("| Competitor | Model | Free tier | Starting price | Enterprise | Currency |");
+  lines.push("|---|---|---|---|---|---|");
+  for (const capture of priced) {
+    const pricing = capture.pricing;
+    if (!pricing) {
+      continue;
+    }
+    const starting = pricing.tiers[0]?.price ?? "Unknown";
+    lines.push(`| ${capture.competitor_name} | ${pricing.pricing_model} | ${pricing.free_tier ? "Yes" : "Unknown"} | ${starting} | ${pricing.enterprise_available ? "Yes" : "Unknown"} | ${pricing.currency ?? "Unknown"} |`);
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
+function renderCustomerSentimentAnalysis(run: ResearchRun): string {
+  const sentimentCaptures = run.captures.filter((capture) => capture.sentiment);
+  const lines: string[] = ["## Customer Sentiment Analysis", ""];
+  if (sentimentCaptures.length === 0) {
+    lines.push("No structured sentiment data was extracted automatically. Review-platform and forum sources remain an explicit follow-up unless they were captured by an agent or imported evidence.", "");
+    return lines.join("\n");
+  }
+
+  for (const capture of sentimentCaptures) {
+    const sentiment = capture.sentiment;
+    if (!sentiment) {
+      continue;
+    }
+    lines.push(`### ${capture.competitor_name}`, "");
+    lines.push(`Overall sentiment: ${sentiment.overall_direction}.`);
+    if (sentiment.top_praised.length > 0) {
+      lines.push(`Praised: ${sentiment.top_praised.join("; ")}.`);
+    }
+    if (sentiment.top_criticized.length > 0) {
+      lines.push(`Criticized: ${sentiment.top_criticized.join("; ")}.`);
+    }
+    for (const entry of sentiment.entries.slice(0, 5)) {
+      lines.push(`- ${entry.source_name}: ${entry.quote_or_paraphrase} (${entry.sentiment}) — ${entry.source_url}`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
 function renderCrossCompetitorFindings(run: ResearchRun): string {
   const findings = run.cross_competitor_findings;
   const lines: string[] = ["## Cross-Competitor Patterns and Findings", ""];
@@ -394,6 +496,68 @@ function renderCrossCompetitorFindings(run: ResearchRun): string {
     lines.push("### Recurring Friction Points", "");
     for (const f of findings.recurring_friction_points) {
       lines.push(`- ${f}`);
+    }
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+function renderOpportunities(run: ResearchRun): string {
+  const opportunities = run.cross_competitor_findings.opportunities ?? [];
+  const lines: string[] = ["## Opportunities and Recommendations", ""];
+  if (opportunities.length === 0) {
+    lines.push("Use the feature matrix, product/UX analysis, and unknowns above to identify opportunities after reviewing the captured public evidence.", "");
+    return lines.join("\n");
+  }
+
+  for (const opportunity of opportunities) {
+    lines.push(`- ${opportunity}`);
+  }
+  lines.push("");
+  return lines.join("\n");
+}
+
+function renderUnknowns(run: ResearchRun): string {
+  const unknowns = run.cross_competitor_findings.unknowns ?? [];
+  const captureUnknowns = run.captures.flatMap((capture) => capture.analysis.designer_product_analysis?.unknowns ?? []);
+  const combined = [...new Set([...unknowns, ...captureUnknowns])];
+  const lines: string[] = ["## Unknowns and Gaps", ""];
+  if (combined.length === 0) {
+    lines.push("No major unknowns were detected beyond normal public-evidence limits.", "");
+    return lines.join("\n");
+  }
+
+  combined.forEach((unknown, index) => {
+    lines.push(`### Unknown ${String(index + 1).padStart(2, "0")}`, "");
+    lines.push("**Question**", unknown, "");
+    lines.push("**Why unresolved**", "The available public evidence did not fully answer this question.", "");
+    lines.push("**Missing evidence**", "Additional docs, public reviews, sales confirmation, or authenticated product access may be required.", "");
+    lines.push("**Next validation step**", "Validate with targeted public-source search, trial access, sales call, or user/customer research.", "");
+  });
+  return lines.join("\n");
+}
+
+function collectEvidenceRecords(run: ResearchRun): EvidenceRecord[] {
+  return run.captures.flatMap((capture) => capture.evidence_records ?? []);
+}
+
+function renderSourceIndex(run: ResearchRun): string {
+  const lines: string[] = ["## Source Index", ""];
+  const records = collectEvidenceRecords(run);
+  if (records.length > 0) {
+    records.forEach((record, index) => {
+      lines.push(`${index + 1}. ${record.source_title ?? `${record.competitor_name} ${record.source_type}`}, accessed on ${record.observed_at.slice(0, 10)}. ${record.source_url}`);
+    });
+    lines.push("");
+    return lines.join("\n");
+  }
+
+  for (const capture of run.captures) {
+    lines.push(`### ${capture.competitor_name}`, "");
+    lines.push("| Step | URL | Screenshot |");
+    lines.push("|---|---|---|");
+    for (const step of capture.steps) {
+      lines.push(`| ${step.step_label} | ${step.url} | assets/${path.basename(step.screenshot_path)} |`);
     }
     lines.push("");
   }
@@ -440,20 +604,6 @@ function renderFootnoteIndex(run: ResearchRun): string {
   return lines.join("\n");
 }
 
-function renderSourceIndex(run: ResearchRun): string {
-  const lines: string[] = ["## Source Index", ""];
-  for (const capture of run.captures) {
-    lines.push(`### ${capture.competitor_name}`, "");
-    lines.push("| Step | URL | Screenshot |");
-    lines.push("|---|---|---|");
-    for (const step of capture.steps) {
-      lines.push(`| ${step.step_label} | ${step.url} | assets/${path.basename(step.screenshot_path)} |`);
-    }
-    lines.push("");
-  }
-  return lines.join("\n");
-}
-
 export function generateMarkdownReport(run: ResearchRun, outputDir?: string): string {
   const baseOutputDir = outputDir ?? path.join(run.run_directory, "output");
   const outputAssetsDir = path.join(baseOutputDir, "assets");
@@ -470,10 +620,15 @@ export function generateMarkdownReport(run: ResearchRun, outputDir?: string): st
     renderGoalAndScope(run),
     renderCompetitorsCovered(run),
     renderMethodology(run),
+    renderSourceMap(run),
     renderFeatureMatrix(run),
     renderCompetitorDeepDive(run, outputAssetsDir),
+    renderPricingComparison(run),
+    renderCustomerSentimentAnalysis(run),
     renderCrossCompetitorFindings(run),
     renderThematicDeepDives(run),
+    renderOpportunities(run),
+    renderUnknowns(run),
     run.citations && run.citations.length > 0
       ? renderFootnoteIndex(run)
       : renderSourceIndex(run),
@@ -482,6 +637,9 @@ export function generateMarkdownReport(run: ResearchRun, outputDir?: string): st
   const report = sections.filter(Boolean).join("\n");
   const reportPath = path.join(baseOutputDir, "research.md");
   writeTextFile(reportPath, report);
+  writeTextFile(path.join(baseOutputDir, "sources.md"), run.citations && run.citations.length > 0
+    ? renderFootnoteIndex(run).replace(/^## Source Index/, "# Sources")
+    : renderSourceIndex(run).replace(/^## Source Index/, "# Sources"));
 
   return reportPath;
 }

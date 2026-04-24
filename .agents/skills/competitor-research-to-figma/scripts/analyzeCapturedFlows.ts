@@ -4,8 +4,10 @@ import {
   CompetitorAnalysis,
   CompetitorCapture,
   CrossCompetitorFindings,
+  DesignerProductAnalysis,
   ResearchRun,
   dedupe,
+  emptyDesignerProductAnalysis,
   logSection,
   requireInput,
   summarizeList,
@@ -236,6 +238,97 @@ function buildCaveats(capture: CompetitorCapture): string[] {
   return summarizeList(caveats, "Analysis is grounded in the observed screenshots and notes only.", 3);
 }
 
+function snippets(capture: CompetitorCapture): string[] {
+  return capture.steps.flatMap((step) => [
+    step.step_label,
+    step.change_note,
+    step.why_it_matters,
+    ...(step.visible_headings ?? []),
+    ...(step.visible_text_snippets ?? []),
+  ]);
+}
+
+function pickMatchingTexts(values: string[], patterns: RegExp[], limit: number): string[] {
+  return dedupe(
+    values.filter((value) => patterns.some((pattern) => pattern.test(value.toLowerCase()))),
+  ).slice(0, limit);
+}
+
+function buildDesignerProductAnalysis(capture: CompetitorCapture): DesignerProductAnalysis {
+  const values = snippets(capture);
+  const lowerCorpus = values.join(" ").toLowerCase();
+  const base = emptyDesignerProductAnalysis();
+  const entryPoints = capture.steps.map((step) => `${step.step_label}: ${step.url}`);
+  const sourceTypes = dedupe(capture.source_map_entries?.map((entry) => entry.source_type.replaceAll("_", " ")) ?? []);
+
+  const useCases = pickMatchingTexts(values, [
+    /create|build|generate|start/,
+    /manage|edit|update|share|send|export/,
+    /analytics|report|track|monitor/,
+    /template|automate|workflow/,
+  ], 8);
+  const affordances = pickMatchingTexts(values, [
+    /button|link|share|copy|download|export|embed|preview|filter|search|toggle|tab|menu/,
+    /create|edit|delete|archive|configure|customize/,
+  ], 8);
+  const constraints = pickMatchingTexts(values, [
+    /limit|max|min|only|required|cannot|must|available|unsupported|expired|fee|rate|quota/,
+  ], 8);
+  const gates = pickMatchingTexts(values, [
+    /enterprise|pro|premium|paid|upgrade|permission|admin|role|contact sales|add-on/,
+  ], 8);
+  const emptyStates = pickMatchingTexts(values, [/empty|no .* yet|nothing|start by|create your first/], 5);
+  const errorStates = pickMatchingTexts(values, [/error|failed|invalid|blocked|captcha|verification|unavailable|not found/], 5);
+  const edgeStates = pickMatchingTexts(values, [/expired|archived|draft|pending|disabled|paused|deleted|canceled|cancelled/], 5);
+
+  const navigationDepth = capture.steps.map((step) => {
+    try {
+      const depth = new URL(step.url).pathname.split("/").filter(Boolean).length;
+      return `${step.step_label}: ${depth} URL level${depth === 1 ? "" : "s"}`;
+    } catch {
+      return `${step.step_label}: URL depth unknown`;
+    }
+  });
+
+  return {
+    ...base,
+    use_cases: summarizeList(useCases, "Use cases require manual synthesis from captured public evidence.", 8),
+    entry_points: summarizeList(entryPoints, "No entry points were captured.", 8),
+    navigation_model: summarizeList(
+      [
+        ...(sourceTypes.length > 0 ? [`Public source coverage: ${sourceTypes.join(", ")}`] : []),
+        ...(capture.analysis?.information_architecture ?? []),
+      ],
+      "Navigation model requires manual interpretation of screenshots.",
+      6,
+    ),
+    navigation_depth: summarizeList(navigationDepth, "Navigation depth was not measurable.", 8),
+    ui_patterns: summarizeList(detectDesignPatterns(capture), "UI patterns require manual interpretation of screenshots.", 8),
+    key_states: summarizeList(
+      capture.steps.map((step) => `${step.step_label}: ${step.change_note}`),
+      "No key states were captured.",
+      10,
+    ),
+    empty_states: summarizeList(emptyStates, "No empty state was directly observed.", 5),
+    error_states: summarizeList(errorStates, "No error state was directly observed.", 5),
+    edge_states: summarizeList(edgeStates, "No edge state was directly observed.", 5),
+    affordances: summarizeList(affordances, "Affordances require manual interpretation of captured UI.", 8),
+    constraints: summarizeList(constraints, "No explicit constraints were observed in captured text.", 8),
+    tier_or_permission_gates: summarizeList(gates, "No tier or permission gate was directly observed.", 6),
+    friction_points: buildFriction(capture),
+    reusable_ideas: buildReusableIdeas(capture),
+    unknowns: summarizeList(
+      [
+        ...(capture.status !== "captured" ? ["Some intended public sources could not be captured automatically."] : []),
+        ...(!lowerCorpus.includes("pricing") ? ["Pricing details require additional verification."] : []),
+        ...(!lowerCorpus.includes("help") && !lowerCorpus.includes("docs") ? ["Detailed help/docs flow evidence may be missing."] : []),
+      ],
+      "No major unknowns were detected beyond normal public-evidence limits.",
+      6,
+    ),
+  };
+}
+
 export function analyzeCompetitorCapture(capture: CompetitorCapture): CompetitorAnalysis {
   const stepReconstruction = capture.steps.map(
     (step) => `Step ${step.step_number}: ${step.change_note} — ${step.why_it_matters}`,
@@ -249,11 +342,10 @@ export function analyzeCompetitorCapture(capture: CompetitorCapture): Competitor
   const caveats = buildCaveats(capture);
   const designPatterns = detectDesignPatterns(capture);
   const informationArchitecture = detectInformationArchitecture(capture);
-
-  return {
+  const intermediateAnalysis: CompetitorAnalysis = {
     experience_summary:
       capture.steps.length > 0
-        ? `Captured ${capture.steps.length} states for ${capture.competitor_name}. Analysis is based on visible headings, text snippets, URL structure, and step progression.`
+        ? `Captured ${capture.steps.length} states for ${capture.competitor_name}. Analysis is based on visible headings, text snippets, URL structure, source map entries, and step progression.`
         : `No direct screenshot evidence was captured for ${capture.competitor_name}.`,
     step_reconstruction: stepReconstruction,
     visible_ui_elements: visibleUiElements,
@@ -265,6 +357,14 @@ export function analyzeCompetitorCapture(capture: CompetitorCapture): Competitor
     caveats,
     design_patterns: designPatterns,
     information_architecture: informationArchitecture,
+  };
+
+  return {
+    ...intermediateAnalysis,
+    designer_product_analysis: buildDesignerProductAnalysis({
+      ...capture,
+      analysis: intermediateAnalysis,
+    }),
   };
 }
 
@@ -283,6 +383,8 @@ export function analyzeRun(run: ResearchRun): ResearchRun {
   const recurringPatterns = dedupe(captures.flatMap((capture) => capture.analysis.interaction_patterns)).slice(0, 8);
   const recurringStrengths = dedupe(captures.flatMap((capture) => capture.analysis.strengths)).slice(0, 8);
   const recurringFrictionPoints = dedupe(captures.flatMap((capture) => capture.analysis.friction_points)).slice(0, 8);
+  const opportunities = dedupe(captures.flatMap((capture) => capture.analysis.designer_product_analysis?.reusable_ideas ?? [])).slice(0, 8);
+  const unknowns = dedupe(captures.flatMap((capture) => capture.analysis.designer_product_analysis?.unknowns ?? [])).slice(0, 8);
 
   // Preserve LLM-populated strategic fields if they already exist on the run
   const existing = run.cross_competitor_findings;
@@ -299,6 +401,8 @@ export function analyzeRun(run: ResearchRun): ResearchRun {
     ...(existing.strategic_thesis ? { strategic_thesis: existing.strategic_thesis } : {}),
     ...(existing.strategic_narrative ? { strategic_narrative: existing.strategic_narrative } : {}),
     ...(existing.thematic_deep_dives ? { thematic_deep_dives: existing.thematic_deep_dives } : {}),
+    opportunities: existing.opportunities ?? opportunities,
+    unknowns: existing.unknowns ?? unknowns,
   };
 
   return {

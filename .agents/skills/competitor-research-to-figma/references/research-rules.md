@@ -52,12 +52,16 @@ Gather evidence from these public sources (in priority order for most research q
 
 ## Evidence capture rules
 
+- Public evidence capture is the default. Capture public sources for every included competitor before attempting authenticated capture.
+- Missing credentials must not exclude a competitor from public research.
+- Write and use a source map before capture. Record homepage, feature page, pricing, help/docs, changelog, app store, video, review/forum, case study, and news candidates when available.
 - Full-page screenshots for homepage, pricing, and key feature pages.
 - Focused screenshots for specific UI patterns, sections, or evidence points.
 - Crops where necessary to highlight a specific pattern.
 - Consistent naming: `{competitor}-{source}-{topic}.png`.
 - Every image must have a source URL and context note.
 - Save all images to the active run directory's `output/assets/`.
+- Normalize evidence records with observed fact, inference, unknown, confidence, source URL, observed date, and screenshot path when available.
 
 ## Analysis rules
 
@@ -174,6 +178,7 @@ Never attempt:
 ## Output rules
 
 - Write `<run_directory>/output/research.md` as the primary deliverable.
+- Write `<run_directory>/source-map.json` before capture.
 - Save screenshots to `<run_directory>/output/assets/`.
 - Use the finding template, unknown template, pricing template, and sentiment template from SKILL.md.
 - Optionally write `<run_directory>/output/sources.md` as a standalone source index.

@@ -11,9 +11,12 @@ import {
   CompetitorCapture,
   CredentialEntry,
   DiscoveredCompetitor,
+  EvidenceRecord,
   ExcludedCompetitor,
   ManualInterventionCheckpoint,
   ResearchRun,
+  SourceMap,
+  SourceMapEntry,
   assertSafeToProceed,
   buildStoredResearchInput,
   createRunDirectory,
@@ -25,6 +28,7 @@ import {
   findCredential,
   loadCredentialRegistry,
   logSection,
+  normalizeResearchInput,
   nowIso,
   readJsonFile,
   requireInput,
@@ -251,56 +255,16 @@ async function collectVisibleHeadings(page: Page): Promise<string[]> {
 }
 
 async function collectVisibleTextSnippets(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
-    const results: string[] = [];
-    const seen = new Set<string>();
-    const selector = "h1, h2, h3, h4, [role='heading'], button, a, label, p, li, span, div";
-    const codeLikePattern = /[{}<>]|function\(|window\.|document\.|__cf|ray=|mdrd:|cType:|cdn-cgi/i;
-
-    function isVisible(element: Element): boolean {
-      const htmlElement = element as HTMLElement;
-      const style = window.getComputedStyle(htmlElement);
-      if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
-        return false;
-      }
-      const rect = htmlElement.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    }
-
-    for (const element of Array.from(document.querySelectorAll(selector))) {
-      if (!isVisible(element)) {
-        continue;
-      }
-      if (!["BUTTON", "A", "LABEL"].includes(element.tagName) && element.childElementCount > 0) {
-        continue;
-      }
-
-      const rawText = (element as HTMLElement).innerText || element.textContent || "";
-      const normalized = rawText.replace(/\s+/g, " ").trim();
-      if (normalized.length < 4 || normalized.length > 140) {
-        continue;
-      }
-      if (codeLikePattern.test(normalized)) {
-        continue;
-      }
-      if ((normalized.match(/[=<>{}]/g)?.length ?? 0) > 1) {
-        continue;
-      }
-
-      const key = normalized.toLowerCase();
-      if (seen.has(key)) {
-        continue;
-      }
-
-      seen.add(key);
-      results.push(normalized);
-      if (results.length >= 24) {
-        break;
-      }
-    }
-
-    return results;
-  });
+  const bodyText = await page.locator("body").innerText({ timeout: 5_000 }).catch(() => "");
+  const codeLikePattern = /[{}<>]|function\(|window\.|document\.|__cf|ray=|mdrd:|cType:|cdn-cgi/i;
+  return dedupe(
+    bodyText
+      .split(/\n+/)
+      .map((line) => line.replace(/\s+/g, " ").trim())
+      .filter((line) => line.length >= 4 && line.length <= 140)
+      .filter((line) => !codeLikePattern.test(line))
+      .filter((line) => (line.match(/[=<>{}]/g)?.length ?? 0) <= 1),
+  ).slice(0, 24);
 }
 
 async function waitForPageToSettle(page: Page): Promise<void> {
@@ -1035,45 +999,221 @@ function buildStoredInputForCapture(request: CaptureRequest): ResearchRun["input
   const credentialRegistryPath = resolveCredentialPath(request);
   return buildStoredResearchInput({
     feature_description: request.feature_description,
+    ...(request.research_question ? { research_question: request.research_question } : {}),
     ...(request.research_name ? { research_name: request.research_name } : {}),
     ...(request.figma_destination_url ? { figma_destination_url: request.figma_destination_url } : {}),
     ...(request.company_name ? { company_name: request.company_name } : {}),
     ...(credentialRegistryPath ? { credential_registry_path: credentialRegistryPath } : {}),
+    ...(request.credentials_path ? { credentials_path: request.credentials_path } : {}),
     ...(request.catalog_path ? { catalog_path: request.catalog_path } : {}),
     ...(request.resume_from_run_path ? { resume_from_run_path: request.resume_from_run_path } : {}),
     ...(request.competitor_allowlist ? { competitor_allowlist: request.competitor_allowlist } : {}),
+    ...(request.competitors ? { competitors: request.competitors } : {}),
+    ...(request.scope ? { scope: request.scope } : {}),
     ...(request.locale ? { locale: request.locale } : {}),
     ...(request.evidence_import_path ? { evidence_import_path: request.evidence_import_path } : {}),
+    ...(request.output_path ? { output_path: request.output_path } : {}),
   });
+}
+
+function fallbackSourceEntries(competitor: DiscoveredCompetitor): SourceMapEntry[] {
+  let origin = competitor.product_url;
+  try {
+    origin = new URL(competitor.product_url).origin;
+  } catch {
+    // Keep product URL as the fallback origin.
+  }
+
+  return [
+    {
+      competitor_name: competitor.competitor_name,
+      source_type: "feature_page",
+      url: competitor.product_url,
+      notes: "Primary product URL from competitor discovery.",
+      confidence: competitor.confidence,
+      discovered_via: "catalog",
+    },
+    {
+      competitor_name: competitor.competitor_name,
+      source_type: "homepage",
+      url: origin,
+      notes: "Homepage inferred from product URL origin.",
+      confidence: "medium",
+      discovered_via: "heuristic",
+    },
+    {
+      competitor_name: competitor.competitor_name,
+      source_type: "pricing",
+      url: `${origin}/pricing`,
+      notes: "Likely pricing URL inferred from product URL origin.",
+      confidence: "medium",
+      discovered_via: "heuristic",
+    },
+  ];
+}
+
+function sourceEntriesForCompetitor(sourceMap: SourceMap | undefined, competitor: DiscoveredCompetitor): SourceMapEntry[] {
+  const entries = sourceMap?.entries.filter(
+    (entry) => slugify(entry.competitor_name) === slugify(competitor.competitor_name),
+  ) ?? [];
+  return entries.length > 0 ? entries : fallbackSourceEntries(competitor);
+}
+
+function captureStatusFromSteps(steps: CaptureStep[], warnings: string[]): CompetitorCapture["status"] {
+  if (steps.length >= 2) {
+    return "captured";
+  }
+  if (steps.length === 1 || warnings.length > 0) {
+    return "partial";
+  }
+  return "blocked";
+}
+
+function evidenceFromStep(
+  competitorName: string,
+  source: SourceMapEntry,
+  step: CaptureStep,
+): EvidenceRecord {
+  const observedBits = [
+    ...(step.visible_headings ?? []).slice(0, 3),
+    ...(step.visible_text_snippets ?? []).slice(0, 3),
+  ];
+  return {
+    id: `${slugify(competitorName)}-${String(step.step_number).padStart(2, "0")}-${slugify(source.source_type)}`,
+    competitor_name: competitorName,
+    source_type: source.source_type,
+    source_url: step.url,
+    ...(source.title ? { source_title: source.title } : {}),
+    screenshot_path: step.screenshot_path,
+    observed_at: nowIso(),
+    observed_fact:
+      observedBits.length > 0
+        ? `Captured visible public evidence: ${observedBits.join(" / ")}.`
+        : step.change_note,
+    inference: "Design and product implications require synthesis against other captured sources.",
+    confidence: source.confidence,
+  };
+}
+
+async function capturePublicSources(
+  competitor: DiscoveredCompetitor,
+  competitorDir: string,
+  sourceMap: SourceMap | undefined,
+): Promise<CompetitorCapture> {
+  const entries = sourceEntriesForCompetitor(sourceMap, competitor)
+    .filter((entry) => ["homepage", "feature_page", "pricing", "help_center", "docs"].includes(entry.source_type))
+    .slice(0, 5);
+  const steps: CaptureStep[] = [];
+  const warnings: string[] = [];
+  const evidenceRecords: EvidenceRecord[] = [];
+  const session = await launchBrowserSession(true);
+
+  try {
+    for (const source of entries) {
+      try {
+        await session.page.goto(source.url, { waitUntil: "domcontentloaded", timeout: 45_000 });
+        await waitForPageToSettle(session.page);
+        const barrier = await detectBarrier(session.page);
+        if (barrier) {
+          warnings.push(`${source.source_type} skipped because a guarded state was detected: ${barrier}.`);
+          continue;
+        }
+
+        await saveStep(
+          session.page,
+          competitorDir,
+          steps,
+          `public-${source.source_type}`,
+          `Captured public ${source.source_type.replaceAll("_", " ")} evidence from ${source.url}.`,
+          source.notes,
+        );
+        const step = steps.at(-1);
+        if (step) {
+          evidenceRecords.push(evidenceFromStep(competitor.competitor_name, source, step));
+        }
+      } catch (error) {
+        warnings.push(
+          `${source.source_type} capture failed for ${source.url}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    }
+  } finally {
+    await closeBrowserSession(session);
+  }
+
+  const status = captureStatusFromSteps(steps, warnings);
+  return {
+    competitor_name: competitor.competitor_name,
+    status,
+    summary:
+      steps.length > 0
+        ? `Captured ${steps.length} public evidence state${steps.length === 1 ? "" : "s"} across ${entries.length} mapped source${entries.length === 1 ? "" : "s"}.`
+        : "No public evidence screenshots could be captured automatically.",
+    steps,
+    analysis: emptyAnalysis(),
+    warnings,
+    source_map_entries: entries,
+    evidence_records: evidenceRecords,
+  };
+}
+
+function mergePublicAndAuthenticatedCaptures(
+  publicCapture: CompetitorCapture,
+  authenticatedCapture: CompetitorCapture,
+): CompetitorCapture {
+  const publicStepCount = publicCapture.steps.length;
+  const authenticatedSteps = authenticatedCapture.steps.map((step, index) => ({
+    ...step,
+    step_number: publicStepCount + index + 1,
+  }));
+
+  return {
+    ...publicCapture,
+    status: authenticatedCapture.status === "captured" || publicCapture.status === "captured"
+      ? "captured"
+      : authenticatedCapture.status === "blocked" && publicCapture.status === "blocked"
+        ? "blocked"
+        : "partial",
+    summary: `${publicCapture.summary} Authenticated lane: ${authenticatedCapture.summary}`,
+    steps: [...publicCapture.steps, ...authenticatedSteps],
+    warnings: [...publicCapture.warnings, ...authenticatedCapture.warnings],
+    ...(authenticatedCapture.navigation_hints_used
+      ? { navigation_hints_used: authenticatedCapture.navigation_hints_used }
+      : {}),
+    ...(authenticatedCapture.resume_url ?? publicCapture.resume_url
+      ? { resume_url: authenticatedCapture.resume_url ?? publicCapture.resume_url }
+      : {}),
+    ...(publicCapture.source_map_entries ? { source_map_entries: publicCapture.source_map_entries } : {}),
+    ...(publicCapture.evidence_records ? { evidence_records: publicCapture.evidence_records } : {}),
+  };
 }
 
 export async function captureDiscoveredCompetitors(
   request: CaptureRequest,
   options: { runId: string; runDirectory: string },
 ): Promise<CaptureExecutionResult> {
-  const registry = loadCredentialRegistry(resolveCredentialPath(request), request.credentials);
+  const normalized = normalizeResearchInput(request);
+  const registry = loadCredentialRegistry(resolveCredentialPath(normalized), normalized.credentials);
   const included: string[] = [];
   const excluded: ExcludedCompetitor[] = [];
   const captures: CompetitorCapture[] = [];
   const warnings: string[] = [];
   const checkpoints: ManualInterventionCheckpoint[] = [];
-  const hasCredentialInput = Boolean(resolveCredentialPath(request) ?? request.credentials);
-  const headless = request.headless ?? (process.env.HEADLESS ? process.env.HEADLESS !== "false" : !hasCredentialInput);
+  const hasCredentialInput = Boolean(resolveCredentialPath(normalized) ?? normalized.credentials);
+  const headless = normalized.headless ?? (process.env.HEADLESS ? process.env.HEADLESS !== "false" : !hasCredentialInput);
 
-  for (const competitor of request.discovered_competitors) {
+  for (const competitor of normalized.discovered_competitors) {
+    included.push(competitor.competitor_name);
+    const competitorDir = ensureDir(path.join(options.runDirectory, slugify(competitor.competitor_name)));
+    const publicCapture = await capturePublicSources(competitor, competitorDir, normalized.source_map);
     const credential = findCredential(registry, competitor.competitor_name);
     if (!credential) {
-      excluded.push({
-        competitor_name: competitor.competitor_name,
-        reason: "No usable credentials were provided, so the competitor was excluded from live capture.",
-      });
+      captures.push(publicCapture);
       continue;
     }
 
-    included.push(competitor.competitor_name);
-    const competitorDir = ensureDir(path.join(options.runDirectory, slugify(competitor.competitor_name)));
     const navigationHints = buildNavigationHints(credential);
-    const resumeContext = loadResumeContext(request.resume_from_run_path, competitor.competitor_name);
+    const resumeContext = loadResumeContext(normalized.resume_from_run_path, competitor.competitor_name);
 
     if (process.env.BROWSER_AGENT_COMMAND) {
       try {
@@ -1093,7 +1233,7 @@ export async function captureDiscoveredCompetitors(
           competitor_name: competitor.competitor_name,
           product_url: competitor.product_url,
           login_url: competitor.login_url,
-          feature_description: request.feature_description,
+          feature_description: normalized.feature_description,
           run_id: options.runId,
           run_directory: options.runDirectory,
           screenshot_directory: competitorDir,
@@ -1115,21 +1255,20 @@ export async function captureDiscoveredCompetitors(
             result_path: browserAgentResultPath,
           },
         });
-        captures.push(result.capture);
+        captures.push(mergePublicAndAuthenticatedCaptures(publicCapture, result.capture));
         if (result.checkpoint) {
           checkpoints.push(result.checkpoint);
         }
       } catch (error) {
-        captures.push(
-          buildEmptyCapture(
+        const failedAuthCapture = buildEmptyCapture(
             competitor.competitor_name,
             "blocked",
             "Capture failed while invoking the configured browser-agent command.",
             error instanceof Error ? error.message : String(error),
             navigationHints,
             resumeContext.resume_url,
-          ),
-        );
+          );
+        captures.push(mergePublicAndAuthenticatedCaptures(publicCapture, failedAuthCapture));
         checkpoints.push({
           competitor_name: competitor.competitor_name,
           reason: "Custom browser-agent command failed.",
@@ -1149,21 +1288,20 @@ export async function captureDiscoveredCompetitors(
         navigationHints,
         resumeContext,
       );
-      captures.push(result.capture);
+      captures.push(mergePublicAndAuthenticatedCaptures(publicCapture, result.capture));
       if (result.checkpoint) {
         checkpoints.push(result.checkpoint);
       }
     } catch (error) {
-      captures.push(
-        buildEmptyCapture(
+      const failedAuthCapture = buildEmptyCapture(
           competitor.competitor_name,
           "blocked",
           "Capture failed before completing a safe mainline flow.",
           error instanceof Error ? error.message : String(error),
           navigationHints,
           resumeContext.resume_url,
-        ),
-      );
+        );
+      captures.push(mergePublicAndAuthenticatedCaptures(publicCapture, failedAuthCapture));
       checkpoints.push({
         competitor_name: competitor.competitor_name,
         reason: "Unexpected Playwright failure during capture.",
@@ -1172,8 +1310,6 @@ export async function captureDiscoveredCompetitors(
       });
     }
   }
-
-  warnings.push(...excluded.map((entry) => `${entry.competitor_name}: ${entry.reason}`));
 
   return {
     included_competitors: included,
@@ -1185,35 +1321,37 @@ export async function captureDiscoveredCompetitors(
 }
 
 export async function captureCompetitorFlows(request: CaptureRequest): Promise<ResearchRun> {
-  assertSafeToProceed(request);
+  const normalized = normalizeResearchInput(request);
+  assertSafeToProceed(normalized);
 
-  const setup = await runSetupValidation(request.figma_destination_url);
+  const setup = await runSetupValidation(normalized.figma_destination_url);
   if (!setup.ok) {
     console.warn("Setup validation warning: some tooling is unavailable. Capture will proceed with available tools.");
   }
 
   const { runId, runDirectory } = createRunDirectory(process.cwd(), {
-    featureDescription: request.feature_description,
-    ...(request.research_name ? { researchName: request.research_name } : {}),
-    ...(request.run_id ? { runId: request.run_id } : {}),
+    featureDescription: normalized.feature_description,
+    ...(normalized.research_name ? { researchName: normalized.research_name } : {}),
+    ...(normalized.run_id ? { runId: normalized.run_id } : {}),
   });
   const startedAt = nowIso();
-  const result = await captureDiscoveredCompetitors(request, { runId, runDirectory });
+  const result = await captureDiscoveredCompetitors(normalized, { runId, runDirectory });
 
   const run: ResearchRun = {
     run_id: runId,
     run_directory: runDirectory,
     started_at: startedAt,
     updated_at: nowIso(),
-    input: buildStoredInputForCapture(request),
+    input: buildStoredInputForCapture(normalized),
     setup_validation: setup,
-    discovered_competitors: request.discovered_competitors,
+    discovered_competitors: normalized.discovered_competitors,
     included_competitors: result.included_competitors,
     excluded_competitors: result.excluded_competitors,
     captures: result.captures,
     cross_competitor_findings: emptyCrossFindings(),
-    ...(request.figma_destination_url
-      ? { figma_export: defaultFigmaExport(request.figma_destination_url, runDirectory) }
+    ...(normalized.source_map ? { source_map: normalized.source_map } : {}),
+    ...(normalized.figma_destination_url
+      ? { figma_export: defaultFigmaExport(normalized.figma_destination_url, runDirectory) }
       : {}),
     warnings: result.warnings,
     manual_intervention_checkpoints: result.manual_intervention_checkpoints,

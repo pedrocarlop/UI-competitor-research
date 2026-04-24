@@ -55,6 +55,7 @@ you want to understand
           v
 +-----------------------------+
 |  4. Build source map        |
+|  Write source-map.json      |
 +-----------------------------+
           |
           v
@@ -119,6 +120,7 @@ runs/
           competitor-b-youtube-flow-step-03.png
         research.md
         sources.md          (optional — full source index)
+      source-map.json       (public source candidates attempted)
 ```
 
 Each run gets its own research-named directory under `runs/`, so the same project folder can hold multiple research topics without collisions.
@@ -142,6 +144,8 @@ The markdown report includes:
 13. **Source index**
 
 No Figma export is required. The output is self-contained markdown that works in any review workflow (in Antigravity, the output is rendered directly as a rich, interactive Markdown Artifact alongside captured native WebP browser recordings). Figma export is available as an optional add-on.
+
+Default capture is public-first. A run attempts public feature pages, homepages, pricing pages, help/docs, and other mapped sources for every included competitor. Credentials are additive: competitors without credentials remain in the report with public evidence and explicit unknowns.
 
 ---
 
@@ -382,3 +386,13 @@ Credential registry example:
 ```
 
 Run inputs can reference this file with `credential_registry_path` or `credentials_path`. Keep real credential files outside version control.
+
+## Development checks
+
+```bash
+npm run typecheck
+npm run validate:schemas
+npm test
+```
+
+The tests cover canonical input normalization, explicit competitor discovery, source-map generation, public capture without credentials, schema drift guards, and report contract sections.
