@@ -1,6 +1,6 @@
 name = "competitor_discoverer"
 description = "Discovers and ranks relevant competitors for a given domain. Preferred for step 3 of the competitor-research workflow."
-model = "gpt-5.4-mini"
+model = "gpt-5.5"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """

@@ -1,6 +1,6 @@
 name = "gap_documenter"
 description = "Documents research gaps and unknowns. Handles step 10 (unknowns) of the competitor-research workflow."
-model = "gpt-5.4-mini"
+model = "gpt-5.5"
 model_reasoning_effort = "low"
 sandbox_mode = "read-only"
 developer_instructions = """

@@ -1,6 +1,6 @@
 name = "market_researcher"
 description = "Researches market landscape for a given domain. Preferred for step 2 of the competitor-research workflow and can serve as a backward-compatible fallback for combined step 2+3 runs."
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = """

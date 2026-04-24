@@ -25,5 +25,5 @@ The installable skill lives in `.agents/skills/competitor-research-to-figma/` (l
 - Update examples alongside any methodology or output format change.
 - `SKILL.md` is the single source of truth for the skill definition. The Claude install script copies it directly to `~/.claude/commands/`.
 - Keep `.codex/agents/*.toml` in sync with the Codex subagent model routing described in `SKILL.md`.
-- For Antigravity, refer to the tools specified in `SKILL.md` (`search_web`, `browser_subagent`) rather than assuming subagent scripts or raw textual fallback.
+- For Antigravity, refer to the tools specified in `SKILL.md` (`search_web`, Browser Use / `browser_subagent` when available) rather than assuming subagent scripts or raw textual fallback.
 - Ensure changes work across all three platforms: Claude Code, Codex, and Antigravity.

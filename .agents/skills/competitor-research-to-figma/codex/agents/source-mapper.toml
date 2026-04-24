@@ -1,6 +1,6 @@
 name = "source_mapper"
 description = "Maps available public sources for each competitor. Handles step 4 (source map) of the competitor-research workflow."
-model = "gpt-5.4-mini"
+model = "gpt-5.5"
 model_reasoning_effort = "low"
 sandbox_mode = "read-only"
 developer_instructions = """

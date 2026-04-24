@@ -42,7 +42,9 @@ You need:
 
 For automated screenshot capture, at least one of the following should be available:
 - Playwright installed locally (`npm install`)
+- Browser Use CLI (`browser-use`, from the `browser-use` Python package)
 - `BROWSER_AGENT_COMMAND` pointing to a custom browser automation command
+- `BROWSER_USE_COMMAND` pointing to a non-default Browser Use CLI command
 - `PLAYWRIGHT_WS_ENDPOINT` configured for remote browser execution
 - A browser MCP tool available in your environment
 

@@ -1,6 +1,6 @@
 name = "evidence_gatherer"
 description = "Gathers competitive evidence, pricing, and sentiment for a single competitor. Handles steps 6+7+8 combined of the competitor-research workflow. Spawn one instance per competitor."
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 developer_instructions = """
@@ -10,6 +10,9 @@ Gather comprehensive public evidence for the assigned competitor.
 You must treat screenshots as filesystem artifacts, not as a prose-only claim.
 Do not return a screenshot path unless you created the file and verified it exists.
 Do not rely on Claude-specific browser MCP names when running in Codex.
+Prefer the current Browser Use CLI (`browser-use`) when it is available for
+interactive browser inspection; set `BROWSER_USE_COMMAND` if the binary uses a
+custom command name.
 When persistent screenshots are required, prefer the bundled Playwright workflow
 in this repository so PNGs are actually written to disk.
 

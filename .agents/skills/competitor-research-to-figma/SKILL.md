@@ -43,7 +43,7 @@ If the research question is missing, ask for it first. Do not proceed without it
 
 This skill uses model routing to delegate data-gathering steps to faster, cheaper models while keeping strategic analysis and final prose on the main orchestrator model.
 
-For Codex specifically, keep the orchestrator on `gpt-5.4`, reserve `high` reasoning effort for the synthesis-heavy steps (5, 9, 9b, 11), and push straightforward discovery/mapping/documentation work to smaller `gpt-5.4-mini` agents where quality is not materially reduced.
+For Codex specifically, keep the orchestrator and subagents on `gpt-5.5`, reserve `high` reasoning effort for the synthesis-heavy steps (5, 9, 9b, 11), and run straightforward discovery/mapping/documentation work with lower reasoning effort where quality is not materially reduced.
 
 ### Routing table
 
@@ -51,23 +51,23 @@ Subagent model tiers range from high-reasoning to minimal, matched to task compl
 
 | Step | Role | Claude Code | Codex | Antigravity | Why |
 |------|------|-------------|-------|-------------|-----|
-| 1. Define question | Orchestrator | opus (main) | gpt-5.4 / medium (main) | Main Orchestrator | Interactive, needs conversation context |
-| 2. Market context | **Subagent/Tool** | sonnet | gpt-5.4 / medium | `search_web` Tool | Evaluating and synthesizing market trends |
-| 3. Discover competitors | **Subagent/Tool** | sonnet | gpt-5.4-mini / medium | `search_web` Tool | Broad search, ranking, and filtering are lighter than synthesis |
-| 4. Build source map | **Subagent/Tool** | haiku | gpt-5.4-mini / low | `read_url_content` Tool | Systematic URL enumeration |
-| 5. Feature matrix | Orchestrator | opus (main) | gpt-5.4 / high (main) | Main Orchestrator | High synthesis, cross-referencing many sources |
-| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.4 / medium | `browser_subagent` Tool | Per-competitor data gathering, needs judgment |
-| 9. Analysis & synthesis | Orchestrator | opus (main) | gpt-5.4 / high (main) | Main Orchestrator | Core strategic reasoning |
-| 9b. Strategic thesis | Orchestrator | opus (main) | gpt-5.4 / high (main) | Main Orchestrator | Highest reasoning required |
-| 10. Unknowns | **Subagent/Tool** | haiku | gpt-5.4-mini / low | Main Orchestrator (Artifacting) | Systematic gap documentation |
-| 11. Report | Orchestrator | opus (main) | gpt-5.4 / high (main) | Native Artifacts | Final prose quality matters |
-| 12. Figma export | **Subagent** | haiku | gpt-5.4-mini / low | Not natively supported | Mechanical tool invocation |
+| 1. Define question | Orchestrator | opus (main) | gpt-5.5 / medium (main) | Main Orchestrator | Interactive, needs conversation context |
+| 2. Market context | **Subagent/Tool** | sonnet | gpt-5.5 / medium | `search_web` Tool | Evaluating and synthesizing market trends |
+| 3. Discover competitors | **Subagent/Tool** | sonnet | gpt-5.5 / medium | `search_web` Tool | Broad search, ranking, and filtering are lighter than synthesis |
+| 4. Build source map | **Subagent/Tool** | haiku | gpt-5.5 / low | `read_url_content` Tool | Systematic URL enumeration |
+| 5. Feature matrix | Orchestrator | opus (main) | gpt-5.5 / high (main) | Main Orchestrator | High synthesis, cross-referencing many sources |
+| 6+7+8. Evidence + Pricing + Sentiment | **Subagent ×N** | sonnet | gpt-5.5 / medium | Browser Use / `browser_subagent` Tool | Per-competitor data gathering, needs judgment |
+| 9. Analysis & synthesis | Orchestrator | opus (main) | gpt-5.5 / high (main) | Main Orchestrator | Core strategic reasoning |
+| 9b. Strategic thesis | Orchestrator | opus (main) | gpt-5.5 / high (main) | Main Orchestrator | Highest reasoning required |
+| 10. Unknowns | **Subagent/Tool** | haiku | gpt-5.5 / low | Main Orchestrator (Artifacting) | Systematic gap documentation |
+| 11. Report | Orchestrator | opus (main) | gpt-5.5 / high (main) | Native Artifacts | Final prose quality matters |
+| 12. Figma export | **Subagent** | haiku | gpt-5.5 / low | Not natively supported | Mechanical tool invocation |
 
 Steps 6, 7, and 8 are merged into a **single subagent per competitor** to reduce spawn overhead. One subagent handles evidence capture, pricing analysis, and sentiment gathering for its assigned competitor.
 
 ### Parallelization
 
-- **Steps 2 + 3:** Spawn market context and competitor discovery subagents concurrently. Wait for both before proceeding to step 4. In Codex, prefer separate agents for these steps so competitor discovery can stay on a lighter model.
+- **Steps 2 + 3:** Spawn market context and competitor discovery subagents concurrently. Wait for both before proceeding to step 4. In Codex, prefer separate agents for these steps so competitor discovery can use a lower reasoning-effort path.
 - **Steps 6+7+8:** Spawn one combined subagent per competitor concurrently (up to all competitors in parallel). Collect all results before proceeding to step 9.
 
 ### Platform-specific spawn mechanics
@@ -86,26 +86,27 @@ Agent(model="haiku", prompt="<subagent prompt for mechanical steps>")
 Use custom agent TOML files in `.codex/agents/`. Each TOML defines a subagent role with a model and reasoning effort tier matched to task complexity. Prefer the exact Codex agent names below when spawning. Parallelism is controlled by `[agents] max_threads` in `config.toml` (default 6).
 
 Available agent definitions:
-- `market_researcher` — step 2 (market context) — `gpt-5.4` / medium effort
-- `competitor_discoverer` — step 3 (competitor discovery) — `gpt-5.4-mini` / medium effort
-- `source_mapper` — step 4 (source map) — `gpt-5.4-mini` / low effort
-- `evidence_gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.4` / medium effort
-- `gap_documenter` — step 10 (unknowns) — `gpt-5.4-mini` / low effort
+- `market_researcher` — step 2 (market context) — `gpt-5.5` / medium effort
+- `competitor_discoverer` — step 3 (competitor discovery) — `gpt-5.5` / medium effort
+- `source_mapper` — step 4 (source map) — `gpt-5.5` / low effort
+- `evidence_gatherer` — steps 6+7+8 combined (per-competitor evidence, pricing, sentiment) — `gpt-5.5` / medium effort
+- `gap_documenter` — step 10 (unknowns) — `gpt-5.5` / low effort
 
 Agent template availability:
 - The repo keeps the canonical Codex agent definitions in the root `.codex/agents/` directory.
 - The installable skill bundles mirrored copies in `codex/agents/` so Codex users can copy them into `~/.codex/agents/` after installing the skill.
 
 Codex orchestration policy:
-- Keep the main Codex thread on `gpt-5.4` throughout the run.
+- Keep the main Codex thread on `gpt-5.5` throughout the run.
 - Use `medium` reasoning for coordination, clarification, and step handoffs.
 - Raise the main thread to `high` reasoning only for steps 5, 9, 9b, and 11.
-- Keep straightforward URL enumeration, competitor list generation, and gap documentation on the smaller agents above.
+- Keep straightforward URL enumeration, competitor list generation, and gap documentation on the lower-effort agents above.
 - If `competitor_discoverer` is unavailable, `market_researcher` may be used as a backward-compatible fallback for a combined steps 2+3 pass, but the preferred Codex path is to split them.
 
 Codex screenshot capture note:
 - The evidence-gathering agent must be able to write files. In `.codex/agents/evidence-gatherer.toml`, keep `sandbox_mode = "workspace-write"` so PNG assets can actually be persisted.
 - Do not instruct Codex to use `mcp__Claude_in_Chrome__*` or `mcp__computer-use__screenshot`; those are Claude-oriented examples and do not guarantee saved files in Codex.
+- Prefer the current Browser Use CLI (`browser-use`, latest verified: 0.12.6) when the environment exposes it for interactive browser inspection. Configure `BROWSER_USE_COMMAND` if the binary is installed under a non-default command.
 - When Codex needs persistent screenshots, prefer the bundled Playwright-backed scripts in this repo (`npm run check:setup`, `npm run capture`, `npm run run:research`) so captured images are written to disk and can be verified.
 
 #### Antigravity
@@ -113,7 +114,7 @@ Codex screenshot capture note:
 Antigravity utilizes specialized native tools instead of generic thinking subagents:
 - Use the `search_web` tool concurrently for Market Context and Competitor Discovery.
 - Use the `read_url_content` tool concurrently for building the Source Map.
-- Use the `browser_subagent` tool concurrently for gathering specific Competitor Evidence, Pricing, and Sentiment. Configure the `Task` prompt to explicitly instruct the subagent to extract the required JSON data payloads. Provide a descriptive `RecordingName` to automatically capture the browser session as a WebP video.
+- Use the current Browser Use browser automation tool when available. If Antigravity exposes `browser_subagent`, run it concurrently for specific Competitor Evidence, Pricing, and Sentiment. Configure the `Task` prompt to explicitly instruct the browser worker to extract the required JSON data payloads. Provide a descriptive `RecordingName` when the environment supports browser-session recordings.
 - Use the `write_to_file` tool with `IsArtifact: true` to output the final `research.md` (using carousels to embed WebP recordings and screenshots) directly to the user's workspace.
 
 ### Fallback behavior

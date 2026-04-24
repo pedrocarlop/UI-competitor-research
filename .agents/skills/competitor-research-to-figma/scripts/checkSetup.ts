@@ -245,6 +245,17 @@ async function validateBrowserSetup(): Promise<ToolCheckResult> {
     // Ignore. The absence of Playwright can still be acceptable if a custom browser command exists.
   }
 
+  const browserUseCommand = process.env.BROWSER_USE_COMMAND ?? "browser-use";
+  if (commandExists(browserUseCommand)) {
+    signals.push(
+      process.env.BROWSER_USE_COMMAND
+        ? `Resolved BROWSER_USE_COMMAND binary "${extractCommandBinary(browserUseCommand)}"`
+        : "Resolved Browser Use CLI binary \"browser-use\"",
+    );
+  } else if (process.env.BROWSER_USE_COMMAND) {
+    warnings.push("BROWSER_USE_COMMAND is set, but its executable could not be resolved.");
+  }
+
   if (process.env.BROWSER_AGENT_COMMAND) {
     signals.push("Detected BROWSER_AGENT_COMMAND");
     if (commandExists(process.env.BROWSER_AGENT_COMMAND)) {
@@ -272,6 +283,7 @@ async function validateBrowserSetup(): Promise<ToolCheckResult> {
   }
 
   const skillSignals = detectSkillSignals([
+    path.join(codexHome, "plugins", "cache", "openai-bundled", "browser-use"),
     path.join(codexHome, "skills", "agent-browser", "SKILL.md"),
     path.join(codexHome, "plugins", "cache", "openai-curated", "vercel"),
   ]);
@@ -288,8 +300,9 @@ async function validateBrowserSetup(): Promise<ToolCheckResult> {
       ? []
       : [
           "Run npm install so the local Playwright dependency becomes available.",
+          "Install Browser Use (`pip install -U browser-use`) or set BROWSER_USE_COMMAND if the binary has a custom name.",
           "If you use a remote browser or a custom browser agent, set PLAYWRIGHT_WS_ENDPOINT or BROWSER_AGENT_COMMAND.",
-          "Make sure your Codex environment has browser-agent tooling enabled before running discovery or capture.",
+          "Make sure your Codex environment has Browser Use or browser-agent tooling enabled before running discovery or capture.",
         ],
     warnings,
     verifiedWith,
