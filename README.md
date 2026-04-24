@@ -1,223 +1,208 @@
 # competitor-research
 
-A competitive intelligence skill for Codex, Claude Code, and Antigravity. Describe a feature domain and the skill produces a comprehensive research dossier — competitor profiles, subfeature matrices, pricing comparisons, customer sentiment analysis, task flows with screenshots, and actionable recommendations.
+`competitor-research` is a research skill for Codex, Claude Code, and Antigravity.
 
-You say "I want to become an expert on payment links" and the skill delivers a full report covering the competitive landscape: who the players are, what they offer, how they price it, what customers love and hate, and where the opportunities are.
+In simple terms: you tell it a product feature or workflow you want to understand, and it researches how competitors handle it. It looks at public evidence like websites, pricing pages, help centers, changelogs, app stores, videos, reviews, and forums. Then it gives you a detailed markdown report with screenshots, links, feature comparisons, pricing notes, customer sentiment, unknowns, and recommendations.
 
----
+Example:
 
-## Why public evidence first
-
-Login-based competitor research sounds thorough, but in practice it is brittle:
-
-- Competitors change login flows, add CAPTCHAs, require phone verification, or flag unfamiliar accounts.
-- Maintaining research accounts across dozens of products is expensive and unreliable.
-- Authenticated flows only show what one account tier can see — not the full picture.
-- The research breaks the moment a credential expires.
-
-Meanwhile, public sources are rich, stable, and underappreciated:
-
-- **Websites** show positioning, messaging, and navigation structure.
-- **Feature and pricing pages** reveal capabilities, tiers, and trade-offs.
-- **Help centers** document the real product — including edge cases marketing pages skip.
-- **Changelogs** show velocity, priorities, and recent investments.
-- **App store pages** show screenshots of actual UI, ratings, and user complaints.
-- **YouTube demos** walk through real flows step by step.
-- **Reviews and forums** surface what users actually experience.
-
-A well-executed public-source audit often produces more actionable insight than a login-based capture of one flow in one account tier.
-
----
-
-## What it does
-
-```
-You describe the feature
-you want to understand
-          |
-          v
-+-----------------------------+
-|  1. Define research question|
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  2. Market landscape        |
-|  Industry context & trends  |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  3. Discover competitors    |
-|  5-10 via web search        |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  4. Build source map        |
-|  Write source-map.json      |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  5. Feature matrix          |
-|  Subfeature comparison      |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  6. Collect evidence        |
-|  Screenshots & flows        |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  7. Pricing analysis        |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  8. Customer sentiment      |
-|  Reviews, Reddit, forums    |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-|  9. Analyze & synthesize    |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-| 10. Produce research.md     |
-|  + assets/ + sources.md     |
-+-----------------------------+
-          |
-          v
-+-----------------------------+
-| 11. Optional: Figma export  |
-+-----------------------------+
+```text
+I want to become an expert on payment links.
+How do competitors handle creation, management, sharing, pricing,
+and what do customers love or hate?
 ```
 
----
+The skill is designed so a product manager, designer, founder, or researcher can understand a market without manually opening dozens of tabs.
 
-## Output
+No Figma file, competitor account, password, or API key is required for the default public research mode.
 
-The skill produces a markdown report with linked evidence:
+## What It Does
 
+The skill helps answer questions like:
+
+- Who are the important competitors for this feature?
+- What do they say publicly about the feature?
+- What capabilities do they support?
+- How do they price it?
+- What does the user flow look like?
+- What do customers praise, dislike, or complain about?
+- Which claims are proven by evidence, which are inferred, and which are still unknown?
+- What opportunities does this create for our product?
+
+It works public-first. That means it does not start by asking for logins or passwords. Competitor accounts are optional and are only used if you explicitly ask for authenticated research.
+
+## How The Workflow Thinks
+
+This is the high-level workflow. It is vertical on purpose so you can follow the decision path from top to bottom.
+
+```mermaid
+flowchart TD
+    A["User asks a research question"] --> B{"Is the research question clear?"}
+
+    B -- "No" --> B1["Ask the user to clarify the feature, workflow, competitors, or scope"]
+    B1 --> B
+
+    B -- "Yes" --> C["Create a fresh run folder under runs/<research-name>/<timestamp>/"]
+    C --> D["Write AGENTS.md guard files so older runs are not reused accidentally"]
+    D --> E{"Did the user provide specific competitors?"}
+
+    E -- "Yes" --> E1["Use the provided competitor list"]
+    E1 --> F
+
+    E -- "No" --> E2["Search the web for relevant competitors"]
+    E2 --> E3["Rank 5 to 10 competitors by relevance and confidence"]
+    E3 --> F
+
+    F["Gather market context"] --> F1{"Is a locale or region mentioned?"}
+    F1 -- "Yes" --> F2["Research regional platforms, pricing, regulations, and local availability"]
+    F1 -- "No" --> F3["Use global market context"]
+    F2 --> G
+    F3 --> G
+
+    G["Build a public source map for each competitor"] --> G1["Find homepages, feature pages, pricing pages, docs, help centers, changelogs, app stores, videos, reviews, forums, and comparison pages"]
+    G1 --> H["Save source-map.json before evidence capture starts"]
+
+    H --> I["Identify subfeatures and capabilities across competitors"]
+    I --> J["Build a feature matrix"]
+    J --> J1{"Is support directly proven by public evidence?"}
+
+    J1 -- "Yes" --> J2["Mark as supported or partially supported and cite the source"]
+    J1 -- "No" --> J3["Mark as unknown instead of guessing"]
+    J2 --> K
+    J3 --> K
+
+    K["Collect evidence for each competitor"] --> K1["Capture screenshots and record source URLs"]
+    K1 --> K2["Analyze public task flows, pricing, positioning, docs, and customer sentiment"]
+
+    K2 --> L{"Did the user explicitly request authenticated research?"}
+    L -- "No" --> M["Continue with public evidence only"]
+
+    L -- "Yes" --> L1{"Are credentials available for this competitor?"}
+    L1 -- "No" --> L2["Keep competitor in the report with public evidence and explicit unknowns"]
+    L1 -- "Yes" --> L3["Use credentials only for that competitor"]
+    L3 --> L4{"Does login hit 2FA, CAPTCHA, SMS, email verification, or suspicious-login checks?"}
+    L4 -- "Yes" --> L5["Pause, hand the browser to the user, wait for confirmation, then resume"]
+    L4 -- "No" --> L6["Capture authenticated evidence"]
+    L5 --> M
+    L6 --> M
+    L2 --> M
+
+    M["Synthesize the research"] --> N["Separate observed facts, inferences, unknowns, and confidence levels"]
+    N --> O["Write output/research.md"]
+    O --> P["Save screenshots and other evidence in output/assets/"]
+    P --> Q{"Did the user provide a Figma destination URL?"}
+    Q -- "Yes" --> Q1["Optionally export visual findings to Figma"]
+    Q -- "No" --> R["Finish with markdown report and linked assets"]
+    Q1 --> R
 ```
+
+## Evidence Rules
+
+The report separates evidence into clear labels:
+
+| Label | Meaning |
+| --- | --- |
+| Observed | Directly seen in a source, screenshot, page, video, review, or document |
+| Inferred | A conclusion drawn from observed evidence |
+| Unknown | Something the research could not prove |
+| Confidence | High, medium, or low confidence based on available evidence |
+
+The skill should not present a guess as a fact.
+
+## Expected Output
+
+Each research run creates a new folder. A typical result looks like this:
+
+```text
 runs/
   AGENTS.md
   payment-links/
     AGENTS.md
-    2026-04-19T10-30-00Z/
+    2026-04-24T10-30-00Z/
       AGENTS.md
+      source-map.json
       output/
-        assets/
-          competitor-a-homepage-full.png
-          competitor-a-pricing.png
-          competitor-a-help-checkout.png
-          competitor-b-appstore-01.png
-          competitor-b-youtube-flow-step-03.png
         research.md
-        sources.md          (optional — full source index)
-      source-map.json       (public source candidates attempted)
+        sources.md
+        assets/
+          stripe-homepage.png
+          stripe-pricing.png
+          stripe-help-payment-links.png
+          square-pricing.png
+          paypal-youtube-flow-step-03.png
 ```
 
-Each run gets its own research-named directory under `runs/`, so the same project folder can hold multiple research topics without collisions.
+The most important file is:
 
-The generated `AGENTS.md` files are context-isolation hooks. Agents must not read or use older sibling runs when starting a new research run; historical runs are only read when the user explicitly asks to resume, audit, compare, or import that specific run.
+```text
+output/research.md
+```
 
-The markdown report includes:
+If the run generates a separate source index, it is saved as:
 
-1. **Executive summary** — 3-5 key takeaways
-2. **Market landscape** — industry context, segments, trends
-3. **Research goal and scope**
-4. **Competitors covered** — with confidence levels
-5. **Methodology**
-6. **Feature matrix** — subfeature comparison table
-7. **Per-competitor deep dives** — positioning, screenshots, task flows, pricing, strengths, weaknesses, customer sentiment
-8. **Pricing comparison** — cross-competitor pricing analysis
-9. **Customer sentiment analysis** — themes, quotes, ratings from reviews and forums
-10. **Cross-competitor patterns and findings** — with observation, inference, and confidence levels
-11. **Opportunities and recommendations** — actionable insights for the PO/designer
-12. **Unknowns and gaps**
-13. **Source index**
+```text
+output/sources.md
+```
 
-No Figma export is required. The output is self-contained markdown that works in any review workflow (in Antigravity, the output is rendered directly as a rich, interactive Markdown Artifact alongside captured native WebP browser recordings). Figma export is available as an optional add-on.
+That report normally includes:
 
-Default capture is public-first. A run attempts public feature pages, homepages, pricing pages, help/docs, and other mapped sources for every included competitor. Credentials are additive: competitors without credentials remain in the report with public evidence and explicit unknowns.
+1. Executive summary
+2. Market landscape
+3. Research goal and scope
+4. Competitors covered
+5. Methodology
+6. Feature matrix
+7. Per-competitor deep dives
+8. Pricing comparison
+9. Customer sentiment analysis
+10. Cross-competitor patterns and findings
+11. Opportunities and recommendations
+12. Unknowns and gaps
+13. Source index
 
----
+Screenshots and other captured assets live in:
 
-## Research modes
+```text
+output/assets/
+```
 
-### Public research mode (default)
+The `source-map.json` file records which public sources were found or attempted before evidence collection.
 
-Uses only public sources. No credentials needed. This is the default and recommended mode.
+## Install Or Update
 
-### Authenticated research mode (optional)
+You only need to do this once per app. The same command also updates an existing install.
 
-Used only when:
-- The user explicitly requests it
-- Public evidence is insufficient for the research question
-- The user has access credentials and wants to provide them
-- The login path is realistic and worth the effort
+### Before You Start
 
-Authenticated research is assisted, not login-first. Credentials can be supplied for a specific competitor through a credential registry, and the workflow will use them only for that competitor. If 2FA, CAPTCHA, SMS/email verification, suspicious-login checks, or similar barriers appear, the workflow opens or keeps a visible browser, tells the user what happened, waits while the user completes the challenge, then resumes capture after confirmation.
+You need:
 
-The deliverable format is the same in both modes. Authenticated research adds logged-in evidence to the same markdown structure, and unresolved verification is recorded as a manual-intervention checkpoint rather than silently skipped.
+- Codex, Claude Code, or Antigravity installed
+- Terminal on your computer
+- Git available in Terminal
 
----
+If Terminal says `git` is missing, run this first:
 
-## Evidence model
+```bash
+xcode-select --install
+```
 
-Every finding distinguishes between:
+Then try the install command again.
 
-| Label | Meaning |
-|---|---|
-| **Observed** | Directly seen in a source — screenshot, page content, video frame |
-| **Inferred** | A conclusion drawn from observed evidence, clearly marked |
-| **Unknown** | Something that could not be determined from available sources |
-| **Confidence** | High, Medium, or Low — how much evidence supports the finding |
+### How To Open Terminal On macOS
 
-This is part of the output contract. The skill never presents inference as fact.
+1. Press `Command + Space`.
+2. Type `Terminal`.
+3. Press `Return`.
+4. Paste the command for your app.
+5. Press `Return`.
+6. Wait until it says the skill was installed.
+7. Close and reopen your AI coding app.
 
----
+You do not need to understand every line in the command. It downloads this repository into a temporary folder, installs the skill, and removes the temporary folder afterward.
 
-## Sources the skill uses
+### Install For Codex
 
-The skill gathers evidence from:
-
-- Company websites — homepage, navigation, footer
-- Feature pages
-- Pricing pages
-- Use-case and solution pages
-- Help centers and support documentation
-- FAQs
-- Changelogs and release notes
-- Blog posts (when directly relevant)
-- App store pages and screenshots (iOS, Android, web directories)
-- YouTube demos and walkthrough videos
-- User reviews and forums
-- Product directories and comparison pages
-
----
-
-## Before you start
-
-You will need:
-- **Codex**, **Claude Code**, or **Antigravity** installed
-- A clear feature or workflow you want to benchmark
-
-That's it. No Figma file, no competitor accounts, no API keys required for the default public research mode.
-
----
-
-## Install or update
-
-Pick your app, paste one command into Terminal, wait for it to finish, then reopen the app. The same command works for both first-time install and future updates.
-
-### Codex
+Paste this into Terminal:
 
 ```bash
 rm -rf /tmp/ui-competitor-research-install && \
@@ -228,7 +213,9 @@ rm -rf /tmp/ui-competitor-research-install
 
 Then close and reopen Codex.
 
-### Claude Code
+### Install For Claude Code
+
+Paste this into Terminal:
 
 ```bash
 rm -rf /tmp/ui-competitor-research-install && \
@@ -239,7 +226,9 @@ rm -rf /tmp/ui-competitor-research-install
 
 Then close and reopen Claude Code.
 
-### Antigravity
+### Install For Antigravity
+
+Paste this into Terminal:
 
 ```bash
 rm -rf /tmp/ui-competitor-research-install && \
@@ -250,13 +239,13 @@ rm -rf /tmp/ui-competitor-research-install
 
 Then close and reopen Antigravity.
 
----
+## How To Use It
 
-## How to use it
+After installing, ask your app to run the skill.
 
-Send a message like:
+Codex or Antigravity:
 
-```
+```text
 Please run competitor-research.
 
 research_question:
@@ -266,9 +255,21 @@ company_name:
 Northstar Commerce
 ```
 
-Or more targeted:
+Claude Code:
 
+```text
+/competitor-research
+
+research_question:
+How do competitors handle payment link creation, management, and sharing?
+
+company_name:
+Northstar Commerce
 ```
+
+You can also name competitors directly:
+
+```text
 Please run competitor-research.
 
 research_question:
@@ -278,97 +279,60 @@ competitors:
 ["Stripe", "Twilio", "Algolia"]
 ```
 
-See more examples in the [example prompts](/.agents/skills/competitor-research-to-figma/examples/invocation.example.md).
+## Good Research Questions
 
----
+Good prompts are specific about the feature or workflow:
 
-## Example prompts
-
-**Become a domain expert:**
-> I want to become an expert on payment links. How do competitors handle creation, management, sharing, pricing, and what do customers love or hate?
-
-**Broad competitive audit:**
-> Research how top project management tools handle recurring task automation. Focus on Asana, Monday.com, ClickUp, and Notion.
-
-**Pricing and positioning comparison:**
-> Compare pricing page structure and tier naming across Figma, Sketch, and Framer. Capture screenshots of each pricing page and note how they frame their free tier.
-
-**Feature-specific deep dive:**
-> How do Stripe, Square, and PayPal present payment link creation to merchants? Gather evidence from their feature pages, help centers, and any public demos.
-
-**Customer sentiment analysis:**
-> What do customers love and hate about project management tools for remote teams? Focus on reviews from G2, Reddit, and app stores for Asana, Monday.com, ClickUp, Linear, and Notion.
-
-**Non-payments domain — analytics:**
-> Compare how analytics platforms handle custom event tracking and funnel analysis.
-
-**Help center and documentation audit:**
-> Compare how Intercom, Zendesk, and Freshdesk document their chatbot setup process. Focus on help center articles and any public video walkthroughs.
-
----
-
-## Finding template
-
-Each finding in the report follows this structure:
-
-```markdown
-### Finding 01
-
-**Pattern**
-[short description]
-
-**Observed**
-[what was directly seen in the source material]
-
-**Evidence**
-- Screenshot: assets/competitor-a-pricing-tier-comparison.png
-- Source: [Competitor A — Pricing](https://example.com/pricing)
-- Source: [Competitor A — Help: Plans overview](https://example.com/help/plans)
-
-**Inference**
-[what this likely means, clearly marked as inference]
-
-**Confidence**
-High / Medium / Low
-
-**Why it matters**
-[why this is relevant to the product or design question]
+```text
+Compare how Stripe, Square, and PayPal present payment link creation to merchants.
+Gather evidence from feature pages, help centers, pricing pages, and public demos.
 ```
 
----
-
-## Unknown template
-
-```markdown
-### Unknown 01
-
-**Question**
-[what remains unclear]
-
-**Why unresolved**
-[why public evidence was not enough]
-
-**Missing evidence**
-[what could not be found]
-
-**Next validation step**
-[how this could be validated later — user interview, sales call, authenticated access, etc.]
+```text
+Research how top project management tools handle recurring task automation.
+Focus on Asana, Monday.com, ClickUp, and Notion.
 ```
 
----
+```text
+Compare how Intercom, Zendesk, and Freshdesk document chatbot setup.
+Focus on help center articles and public video walkthroughs.
+```
 
-## Credential handling
+## Public Research Vs Login Research
 
-The skill does **not** ask for credentials at the start.
+Public research is the default and recommended mode.
 
-Credentials are only relevant when:
-- The user explicitly requests authenticated research
-- Public evidence is genuinely insufficient
-- Access is realistic and worth the effort
+It uses:
 
-If authenticated research is requested, the skill follows the same safety rules: never fabricate credentials, never persist real passwords in run artifacts, never bypass CAPTCHAs or verification barriers, and never perform destructive actions. Login inputs are masked in screenshots. When verification appears, it hands the browser to the user and resumes only after the user completes it.
+- Company websites
+- Feature pages
+- Pricing pages
+- Help centers and support docs
+- FAQs
+- Changelogs and release notes
+- Blog posts when directly relevant
+- App store listings and screenshots
+- YouTube demos and walkthroughs
+- Review sites
+- Forums and social discussions
+- Product directories and comparison pages
 
-Credential registry example:
+Login research is optional. It is only used when:
+
+- You explicitly request it
+- Public evidence is not enough
+- You have access credentials for a specific competitor
+- The login flow is realistic to complete
+
+The skill should never bypass CAPTCHA, 2FA, SMS verification, email verification, or suspicious-login checks. If one appears, it pauses and lets you complete the challenge in the browser.
+
+## Credentials
+
+The skill does not ask for credentials at the start.
+
+If authenticated research is needed, provide credentials through environment variables or a separate credential registry file. Keep real credential files out of version control.
+
+Example credential registry:
 
 ```json
 {
@@ -385,9 +349,23 @@ Credential registry example:
 }
 ```
 
-Run inputs can reference this file with `credential_registry_path` or `credentials_path`. Keep real credential files outside version control.
+Then reference the file with `credential_registry_path` or `credentials_path` in your request.
 
-## Development checks
+## Optional Figma Export
+
+Figma export is optional. The skill works without Figma.
+
+If you provide a `figma_destination_url`, the workflow can also create a visual export of key findings. The markdown report remains the main output.
+
+## Run Isolation
+
+Each new research run should use only the current request and current public sources.
+
+Older runs under `runs/` are not used as context unless you explicitly ask to resume, audit, compare, or import a specific previous run. This prevents old pricing, old screenshots, or old competitor assumptions from contaminating new research.
+
+## Development Checks
+
+For maintainers:
 
 ```bash
 npm run typecheck
@@ -395,4 +373,4 @@ npm run validate:schemas
 npm test
 ```
 
-The tests cover canonical input normalization, explicit competitor discovery, source-map generation, public capture without credentials, schema drift guards, and report contract sections.
+These checks cover input normalization, explicit competitor discovery, source-map generation, public capture without credentials, schema drift guards, and report contract sections.
