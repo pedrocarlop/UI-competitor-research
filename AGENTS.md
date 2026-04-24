@@ -16,11 +16,13 @@ The installable skill lives in `.agents/skills/competitor-research-to-figma/` (l
 - Feature matrix claims must be backed by evidence — do not infer support from marketing copy alone.
 - Market context claims must cite sources and note publication dates.
 - Figma export is optional — the skill must work without it.
+- New research runs must not use older `runs/` outputs as context. Prior runs may be read only for explicit resume, audit, comparison, or import requests.
 
 ## When extending the repository
 
 - Prefer additive changes over breaking shape changes.
 - Keep the output contract stable inside each research-specific run directory: `output/research.md` + `output/assets/`.
+- Preserve run-context isolation hooks in `runs/AGENTS.md`, generated research-folder `AGENTS.md`, generated run-folder `AGENTS.md`, `SKILL.md`, and Codex subagent TOML.
 - Do not reintroduce credential gates or login-first workflows as defaults.
 - Update examples alongside any methodology or output format change.
 - `SKILL.md` is the single source of truth for the skill definition. The Claude install script copies it directly to `~/.claude/commands/`.

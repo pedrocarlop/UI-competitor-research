@@ -6,8 +6,11 @@ This document defines the output structure produced by the competitor-research s
 
 ```
 runs/
+  AGENTS.md
   <research-name>/
+    AGENTS.md
     <run-id>/
+      AGENTS.md
       output/
         assets/
           {competitor}-{source}-{topic}.png
@@ -15,6 +18,8 @@ runs/
         research.md
         sources.md   (optional)
 ```
+
+The `AGENTS.md` files are context-isolation hooks. They remind agents that older sibling runs must not be read or used when starting a new run unless the user explicitly requested resume, audit, comparison, or import.
 
 ## Screenshot naming
 

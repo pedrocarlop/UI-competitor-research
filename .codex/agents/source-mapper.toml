@@ -6,6 +6,11 @@ sandbox_mode = "read-only"
 developer_instructions = """
 You are mapping public sources for competitive research.
 
+Context isolation:
+- Do not read, search, summarize, or use older `runs/` outputs as context.
+- Use only the current competitor list, explicit inputs, and current public web evidence.
+- Only read a prior run if the user explicitly asked to resume, audit, compare, or import that exact run.
+
 For each competitor provided, identify which public sources are available and relevant:
 - Company website (homepage, navigation, footer)
 - Feature pages

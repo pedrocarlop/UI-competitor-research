@@ -462,6 +462,15 @@ export function ensureDir(directoryPath: string): string {
   return directoryPath;
 }
 
+function writeTextFileIfChanged(filePath: string, content: string): void {
+  if (existsSync(filePath) && readFileSync(filePath, "utf8") === content) {
+    return;
+  }
+
+  ensureDir(path.dirname(filePath));
+  writeFileSync(filePath, content, "utf8");
+}
+
 export function slugify(value: string): string {
   return value
     .trim()
@@ -494,6 +503,57 @@ export function resolveResearchSlug(input: Pick<ResearchInput, "feature_descript
   return slug || "research";
 }
 
+function buildRunsAgentInstructions(): string {
+  return `# AGENTS.md
+
+This directory contains generated competitor-research run artifacts.
+
+- When starting a new research run, do not read, search, summarize, or use older sibling runs as context.
+- Treat \`runs/<research-slug>/<run-id>/\` directories as isolated historical artifacts.
+- Only read an existing run when the user explicitly asks to resume, audit, compare, or import that specific run, or when an input path such as \`resume_from_run_path\` or \`evidence_import_path\` points to it.
+- For a new run, create and write only inside the active run directory and its \`output/assets/\` folder.
+`;
+}
+
+function buildResearchAgentInstructions(researchSlug: string): string {
+  return `# AGENTS.md
+
+Research folder: \`${researchSlug}\`
+
+- Do not inspect sibling run directories to bootstrap, influence, or fill gaps in a new research run.
+- Each \`<run-id>/\` directory is an isolated evidence set for that run only.
+- Read an older run here only when the user explicitly names it for resume, audit, comparison, or import.
+- When producing a new run, write only under the active \`<run-id>/\` directory.
+`;
+}
+
+function buildRunAgentInstructions(researchSlug: string, runId: string): string {
+  return `# AGENTS.md
+
+Active research run: \`runs/${researchSlug}/${runId}/\`
+
+- This run must be self-contained.
+- Do not read parent or sibling run directories as research context.
+- Use only the current run inputs, current public-source evidence, and files created inside this run directory.
+- Keep final deliverables in \`output/research.md\` and \`output/assets/\`.
+`;
+}
+
+function ensureRunContextHooks(
+  baseDir: string,
+  options: { researchSlug: string; runId: string; runDirectory: string },
+): void {
+  const runsDirectory = path.join(baseDir, "runs");
+  const researchDirectory = path.join(runsDirectory, options.researchSlug);
+
+  writeTextFileIfChanged(path.join(runsDirectory, "AGENTS.md"), buildRunsAgentInstructions());
+  writeTextFileIfChanged(path.join(researchDirectory, "AGENTS.md"), buildResearchAgentInstructions(options.researchSlug));
+  writeTextFileIfChanged(
+    path.join(options.runDirectory, "AGENTS.md"),
+    buildRunAgentInstructions(options.researchSlug, options.runId),
+  );
+}
+
 export function createRunDirectory(
   baseDir: string,
   options: { runId?: string; researchName?: string; featureDescription: string },
@@ -505,6 +565,7 @@ export function createRunDirectory(
   });
   const runDirectory = path.join(baseDir, "runs", researchSlug, resolvedRunId);
   ensureDir(runDirectory);
+  ensureRunContextHooks(baseDir, { researchSlug, runId: resolvedRunId, runDirectory });
   return { runId: resolvedRunId, researchSlug, runDirectory };
 }
 

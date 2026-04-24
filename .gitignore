@@ -2,7 +2,8 @@ node_modules/
 dist/
 .DS_Store
 .env
-runs/
+runs/*
+!runs/AGENTS.md
 tmp/
 output/
 coverage/

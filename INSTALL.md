@@ -92,8 +92,11 @@ The skill produces:
 
 ```
 runs/
+  AGENTS.md
   <research-name>/
+    AGENTS.md
     <run-id>/
+      AGENTS.md
       output/
         assets/
           {competitor}-{source}-{topic}.png
@@ -101,6 +104,8 @@ runs/
         research.md
         sources.md   (optional)
 ```
+
+The `AGENTS.md` files are generated context-isolation hooks. They keep future agents from using older sibling runs as starting context unless the user explicitly requests resume, audit, comparison, or import.
 
 See the [README](./README.md) for the full output format and evidence model.
 

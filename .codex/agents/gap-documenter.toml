@@ -6,6 +6,11 @@ sandbox_mode = "read-only"
 developer_instructions = """
 You are documenting research gaps for a competitive intelligence report.
 
+Context isolation:
+- Review only evidence and analysis from the current active research run.
+- Do not inspect older `runs/` outputs for gap-filling or context.
+- Only read a prior run if the user explicitly asked to resume, audit, compare, or import that exact run.
+
 Review the evidence collected and analysis produced. For anything that could not be
 determined from public evidence, produce an entry using this template:
 

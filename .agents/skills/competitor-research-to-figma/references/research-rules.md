@@ -4,6 +4,13 @@
 
 Public evidence first. Do not ask for credentials or treat login as the starting point.
 
+## Context isolation rules
+
+- Start each new research run from the user's current request, current public sources, and explicit inputs for that run.
+- Do not read, search, summarize, or use older `runs/<research-slug>/<run-id>/` outputs when starting a new research run.
+- Previous run artifacts may influence a current run only when the user explicitly asks to resume, audit, compare, or import that specific run, or when `resume_from_run_path` or `evidence_import_path` points to it.
+- Keep all writes inside the active run directory and its `output/assets/` folder.
+
 ## Evidence standard
 
 All conclusions must be grounded in:

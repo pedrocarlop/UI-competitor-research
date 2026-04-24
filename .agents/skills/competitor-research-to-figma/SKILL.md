@@ -39,6 +39,16 @@ If the research question is missing, ask for it first. Do not proceed without it
 - `output_path` — where to write the report (defaults to `./runs/<research-name>/<run-id>/output/`)
 - `figma_destination_url` — Figma file URL for optional visual export
 
+## Run context isolation
+
+Each research run must start from the user's current request, current public sources, and any explicit inputs supplied for that run.
+
+- Do not read, search, summarize, or use previous `runs/<research-slug>/<run-id>/` outputs when starting a new research run.
+- Historical runs are off-limits as context because they can contaminate competitor selection, market framing, pricing assumptions, and feature-matrix claims.
+- A prior run may be read only when the user explicitly asks to resume, audit, compare, or import that specific run, or when an input path such as `resume_from_run_path` or `evidence_import_path` points to it.
+- If working inside a project folder that already has `runs/`, create a fresh run directory and use only that active run directory for writes.
+- The bundled scripts create `AGENTS.md` guard files in `runs/`, `runs/<research-slug>/`, and the active run directory so agents entering those folders see the same isolation rule.
+
 ## Model routing
 
 This skill uses model routing to delegate data-gathering steps to faster, cheaper models while keeping strategic analysis and final prose on the main orchestrator model.
@@ -102,6 +112,7 @@ Codex orchestration policy:
 - Raise the main thread to `high` reasoning only for steps 5, 9, 9b, and 11.
 - Keep straightforward URL enumeration, competitor list generation, and gap documentation on the lower-effort agents above.
 - If `competitor_discoverer` is unavailable, `market_researcher` may be used as a backward-compatible fallback for a combined steps 2+3 pass, but the preferred Codex path is to split them.
+- When spawning any Codex subagent, pass only the current research question, explicit user inputs, current competitor/source data, and the active run output path. Do not pass paths to older `runs/` directories unless the user explicitly requested resume, audit, comparison, or import.
 
 Codex screenshot capture note:
 - The evidence-gathering agent must be able to write files. In `.codex/agents/evidence-gatherer.toml`, keep `sandbox_mode = "workspace-write"` so PNG assets can actually be persisted.
@@ -172,7 +183,7 @@ Delegate this step to a fast/cheap subagent. Spawn concurrently with step 3.
 
 - **Input:** `research_question`, `locale` (optional)
 - **Output:** Markdown containing a "## Market Landscape" section (with subsections for segments, trends, events, sources) and optionally a "## Regional Analysis" section. All claims must include source URLs.
-- **Subagent prompt:** "You are a market research analyst. Research the market landscape for the following domain: {research_question}. Search the web for recent market overviews, key segments, trends, funding rounds, and regulatory considerations. If locale is provided ({locale}), also research dominant local platforms, regulatory mandates, and regional pricing dynamics. Produce two markdown sections: '## Market Landscape' and (if locale applies) '## Regional Analysis'. Cite every claim with its source URL. Be thorough but concise."
+- **Subagent prompt:** "You are a market research analyst. Research the market landscape for the following domain: {research_question}. Search the web for recent market overviews, key segments, trends, funding rounds, and regulatory considerations. Do not read or use previous `runs/` outputs as context. If locale is provided ({locale}), also research dominant local platforms, regulatory mandates, and regional pricing dynamics. Produce two markdown sections: '## Market Landscape' and (if locale applies) '## Regional Analysis'. Cite every claim with its source URL. Be thorough but concise."
 
 ### 3. Discover competitors dynamically
 
@@ -199,7 +210,7 @@ Delegate this step to a fast/cheap subagent. Spawn concurrently with step 2.
 
 - **Input:** `research_question`, `company_name` (optional, to exclude), `competitors` (optional, if provided skip discovery)
 - **Output:** JSON array of objects: `[{"competitor_name": "...", "product_url": "...", "reason": "...", "confidence": "high|medium|low"}]` (5-10 entries)
-- **Subagent prompt:** "You are a competitive intelligence researcher. Find 5-10 relevant competitors for: {research_question}. Search the web for '[topic] competitors [current year]', 'best [category] tools', 'alternatives to [known product]'. Search G2, Capterra, and TrustRadius category pages. Exclude {company_name} if provided. For each competitor, return: competitor_name, product_url, reason for inclusion, and confidence level (high/medium/low). Prefer competitors with mature, publicly documented products. Return results as a JSON array."
+- **Subagent prompt:** "You are a competitive intelligence researcher. Find 5-10 relevant competitors for: {research_question}. Search the web for '[topic] competitors [current year]', 'best [category] tools', 'alternatives to [known product]'. Search G2, Capterra, and TrustRadius category pages. Do not read or use previous `runs/` outputs as context. Exclude {company_name} if provided. For each competitor, return: competitor_name, product_url, reason for inclusion, and confidence level (high/medium/low). Prefer competitors with mature, publicly documented products. Return results as a JSON array."
 
 ### 4. Build a source map
 
@@ -225,7 +236,7 @@ Delegate this step to a fast/cheap subagent.
 
 - **Input:** `research_question`, competitor list (names + product URLs from step 3)
 - **Output:** JSON object mapping each competitor name to an array of `{"source_type": "...", "url": "...", "notes": "..."}` objects
-- **Subagent prompt:** "You are mapping public sources for competitive research on: {research_question}. For each competitor below, identify which public sources are available and relevant: company website, feature pages, pricing pages, help centers, changelogs, app store pages, YouTube demos, review pages, etc. Visit each competitor's product URL to find these pages. Return a JSON object mapping each competitor name to an array of {source_type, url, notes} objects. Competitors: {competitor_list_json}"
+- **Subagent prompt:** "You are mapping public sources for competitive research on: {research_question}. For each competitor below, identify which public sources are available and relevant: company website, feature pages, pricing pages, help centers, changelogs, app store pages, YouTube demos, review pages, etc. Visit each competitor's product URL to find these pages. Do not read or use previous `runs/` outputs as context. Return a JSON object mapping each competitor name to an array of {source_type, url, notes} objects. Competitors: {competitor_list_json}"
 
 ### 5. Identify subfeatures and build feature matrix
 
@@ -278,7 +289,7 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
   - `case_studies[]` — `[{"company_name": "...", "use_case": "...", "outcome": "...", "source_url": "...", "source_type": "..."}]`
   - `evidence_notes[]` — raw observations about the competitor's implementation, strengths, weaknesses
   - `flow_reconstruction[]` — step-by-step task flow with screenshot references
-- **Subagent prompt:** "You are a competitive intelligence researcher focused on a single competitor. Gather comprehensive public evidence for {competitor_name} ({product_url}) regarding: {research_question}.
+- **Subagent prompt:** "You are a competitive intelligence researcher focused on a single competitor. Gather comprehensive public evidence for {competitor_name} ({product_url}) regarding: {research_question}. Do not read or use previous `runs/` outputs as context; write evidence only to the active `output_assets_path`.
 
   YOUR TASKS:
   1. EVIDENCE CAPTURE: Visit the sources listed in the source map below. For each key page (homepage, pricing, feature pages, help center):

@@ -105,8 +105,11 @@ The skill produces a markdown report with linked evidence:
 
 ```
 runs/
+  AGENTS.md
   payment-links/
+    AGENTS.md
     2026-04-19T10-30-00Z/
+      AGENTS.md
       output/
         assets/
           competitor-a-homepage-full.png
@@ -119,6 +122,8 @@ runs/
 ```
 
 Each run gets its own research-named directory under `runs/`, so the same project folder can hold multiple research topics without collisions.
+
+The generated `AGENTS.md` files are context-isolation hooks. Agents must not read or use older sibling runs when starting a new research run; historical runs are only read when the user explicitly asks to resume, audit, compare, or import that specific run.
 
 The markdown report includes:
 
