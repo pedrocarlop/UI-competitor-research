@@ -142,12 +142,20 @@ When `locale` is provided, or when the research question references a specific r
 Only use when:
 - The user explicitly requests it
 - Public evidence is insufficient
-- Credentials are available and realistic
+- The user provides credentials for the specific competitor being investigated
+- The login path is realistic and worth the effort
 
 When using authenticated mode:
 - Follow the same evidence model and output format
 - Never fabricate credentials
-- Stop on verification barriers, payment steps, or destructive actions
+- Use credentials only for the matching competitor, never as a general credential pool
+- Do not persist real passwords in run artifacts; redact credential payloads written to disk and prefer environment variables for secrets
+- Mask email/password inputs in screenshots captured during login
+- Fill only ordinary login fields and submit at most two automated attempts before manual handoff
+- If 2FA, OTP, SMS/email verification, CAPTCHA, bot checks, suspicious-login prompts, or identity verification appear, tell the user what happened and hand over a visible browser session
+- Resume capture only after the user completes the challenge and confirms continuation
+- If the challenge cannot be completed, record a manual-intervention checkpoint with the URL and reason, then continue with public evidence
+- Stop on payment steps, legal agreements, or destructive actions
 
 ## Safety rules
 
@@ -156,6 +164,7 @@ Never attempt:
 - OTP bypass
 - SMS bypass
 - Email verification bypass
+- Account-verification completion on behalf of the user
 - Credential fabrication
 - Account takeover
 - Destructive product actions

@@ -28,6 +28,11 @@ Codex capture workflow preference:
   `npm run capture -- --input <path-to-json>`.
 - For end-to-end capture plus report generation, prepare a JSON input file and run
   `npm run run:research -- --input <path-to-json>`.
+- If the user supplied credentials for this competitor, include only this
+  competitor's credential entry via `credential_registry_path` or `credentials_path`.
+  Treat login as assisted authenticated capture: use a visible browser by default,
+  never bypass 2FA/CAPTCHA/OTP/SMS/email verification, hand control to the user
+  for those checks, and resume only after the user confirms completion.
 - Save screenshots under the active research run directory's `output/assets/`
   using the
   naming convention `{competitor_slug}-{source}-{topic}.png`.

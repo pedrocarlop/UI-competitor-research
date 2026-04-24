@@ -58,7 +58,9 @@ Only relevant when the user explicitly requests login-based evidence gathering. 
 .agents/skills/competitor-research-to-figma/examples/competitor-credentials.example.json
 ```
 
-Keep credential files outside version control. Never commit real passwords.
+Use `credential_registry_path` or `credentials_path` in the run input to point at a registry for the specific competitor(s) that should be logged in. When credentials are present, the Playwright path uses a visible browser by default so the user can complete 2FA, CAPTCHA, SMS/email verification, or suspicious-login checks. Automation must not bypass those checks; it pauses, lets the user complete them, then resumes after confirmation.
+
+Keep credential files outside version control. Never commit real passwords. Prefer `email_env` and `password_env` entries over literal secrets.
 
 ## Invocation
 
@@ -73,6 +75,7 @@ Keep credential files outside version control. Never commit real passwords.
 - `scope` — specific sources or areas to focus on
 - `research_name` — short label used to name the run directory (defaults to a slug derived from the research question)
 - `output_path` — where to write the report (defaults to `./runs/<research-name>/<run-id>/output/`)
+- `credential_registry_path` / `credentials_path` — optional path to competitor-specific credentials for assisted authenticated capture
 
 ### Example
 

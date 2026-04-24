@@ -132,6 +132,12 @@ interface BrowserAgentRequestPayload {
   screenshot_directory: string;
   auth_attempts_max: number;
   manual_login_required_after_two_attempts: true;
+  manual_intervention_policy: {
+    handoff_required_for: string[];
+    user_resolves_in_visible_browser: true;
+    resume_signal: "terminal_enter";
+    never_bypass: string[];
+  };
   credentials: {
     login_url?: string;
     email: string;
@@ -332,7 +338,11 @@ async function saveStep(
   const stepNumber = steps.length + 1;
   const fileName = `${String(stepNumber).padStart(2, "0")}-${slugify(stepLabel)}.png`;
   const screenshotPath = path.join(competitorDir, fileName);
-  await page.screenshot({ path: screenshotPath, fullPage: true });
+  await page.screenshot({
+    path: screenshotPath,
+    fullPage: true,
+    mask: [...EMAIL_INPUT_SELECTORS, ...PASSWORD_INPUT_SELECTORS].map((selector) => page.locator(selector)),
+  });
   const visibleHeadings = await collectVisibleHeadings(page);
   const visibleTextSnippets = (await collectVisibleTextSnippets(page)).map(normalizeTextSnippet);
   steps.push({
@@ -493,7 +503,13 @@ function runBrowserAgentCommand(
   command: string,
   payload: BrowserAgentRequestPayload,
 ): { capture: CompetitorCapture; checkpoint?: ManualInterventionCheckpoint } {
-  writeJsonFile(payload.output.request_path, payload);
+  writeJsonFile(payload.output.request_path, {
+    ...payload,
+    credentials: {
+      ...payload.credentials,
+      password: "[redacted]",
+    },
+  });
 
   const shell = process.env.SHELL ?? "zsh";
   const result = spawnSync(shell, ["-lc", `${command} "$BROWSER_AGENT_PAYLOAD_JSON"`], {
@@ -539,7 +555,8 @@ async function closeBrowserSession(session: BrowserSession): Promise<void> {
 
 function printManualLoginInstructions(competitorName: string): void {
   logSection(`Manual Login Required / ${competitorName}`);
-  console.log("Complete login manually in the opened browser.");
+  console.log("Complete login, 2FA, CAPTCHA, or account verification manually in the opened browser.");
+  console.log("Do not complete payments, destructive actions, or legal agreements.");
   console.log("Press Enter in this terminal to continue capture.");
   console.log("Press Ctrl+C to stop and keep the checkpoint.");
 }
@@ -589,13 +606,19 @@ async function resolveManualLogin(
   steps: CaptureStep[],
   attempts: number,
   headless: boolean,
+  options: {
+    targetUrl?: string;
+    stepLabel?: string;
+    changeNote?: string;
+    checkpointReason?: string;
+  } = {},
 ): Promise<ManualLoginResolution> {
   let activeSession = session;
 
   if (!process.env.PLAYWRIGHT_WS_ENDPOINT && headless) {
     await closeBrowserSession(activeSession);
     activeSession = await launchBrowserSession(false);
-    await activeSession.page.goto(credential.login_url ?? competitor.login_url, {
+    await activeSession.page.goto(options.targetUrl ?? credential.login_url ?? competitor.login_url, {
       waitUntil: "domcontentloaded",
       timeout: 60_000,
     });
@@ -606,8 +629,9 @@ async function resolveManualLogin(
     activeSession.page,
     competitorDir,
     steps,
-    "manual-login-required",
-    `Stopped automated login after ${attempts} unresolved sign-in attempt${attempts === 1 ? "" : "s"}.`,
+    options.stepLabel ?? "manual-login-required",
+    options.changeNote ??
+      `Stopped automated login after ${attempts} unresolved sign-in attempt${attempts === 1 ? "" : "s"}.`,
     "Shows the handoff point where the operator must continue safely in a visible browser.",
   );
 
@@ -619,7 +643,7 @@ async function resolveManualLogin(
       aborted: true,
       checkpoint: {
         competitor_name: competitor.competitor_name,
-        reason: "manual_login_required_after_two_attempts",
+        reason: options.checkpointReason ?? "manual_login_required_after_two_attempts",
         url: activeSession.page.url(),
         created_at: nowIso(),
       },
@@ -637,6 +661,78 @@ async function resolveManualLogin(
   );
 
   return { session: activeSession };
+}
+
+async function resolveGuardedState(
+  session: BrowserSession,
+  competitor: DiscoveredCompetitor,
+  credential: CredentialEntry,
+  competitorDir: string,
+  steps: CaptureStep[],
+  warnings: string[],
+  navigationHints: string[],
+  headless: boolean,
+  resumeContext: ResumeContext,
+  barrier: string,
+  context: string,
+): Promise<AutomatedLoginOutcome> {
+  warnings.push(`Encountered guarded state requiring user handoff: ${barrier}.`);
+  const manual = await resolveManualLogin(session, competitor, credential, competitorDir, steps, 1, headless, {
+    targetUrl: session.page.url(),
+    stepLabel: "manual-intervention-required",
+    changeNote: `Encountered a guarded state containing "${barrier}" during ${context}.`,
+    checkpointReason: `Manual intervention required for guarded state: ${barrier}`,
+  });
+
+  if (manual.aborted) {
+    warnings.push("The operator stopped at the manual handoff and kept a checkpoint for later resume.");
+    return {
+      session: manual.session,
+      capture: {
+        competitor_name: competitor.competitor_name,
+        status: "blocked",
+        summary: `Capture paused because ${context} encountered a guarded state that requires manual user action.`,
+        steps,
+        analysis: emptyAnalysis(),
+        warnings,
+        ...(navigationHints.length > 0 ? { navigation_hints_used: navigationHints } : {}),
+        ...(resumeContext.resume_url ? { resume_url: resumeContext.resume_url } : {}),
+      },
+      checkpoint: manual.checkpoint ?? {
+        competitor_name: competitor.competitor_name,
+        reason: `Blocked by guarded state: ${barrier}`,
+        url: manual.session.page.url(),
+        created_at: nowIso(),
+      },
+    };
+  }
+
+  const remainingBarrier = await detectBarrier(manual.session.page);
+  if (remainingBarrier) {
+    warnings.push(`Guarded state remained after manual handoff: ${remainingBarrier}.`);
+    return {
+      session: manual.session,
+      capture: {
+        competitor_name: competitor.competitor_name,
+        status: "blocked",
+        summary: "Capture stopped because a verification or unsafe barrier remained after manual handoff.",
+        steps,
+        analysis: emptyAnalysis(),
+        warnings,
+        ...(navigationHints.length > 0 ? { navigation_hints_used: navigationHints } : {}),
+        ...(resumeContext.resume_url ? { resume_url: resumeContext.resume_url } : {}),
+      },
+      checkpoint: {
+        competitor_name: competitor.competitor_name,
+        reason: `Blocked by guarded state after manual handoff: ${remainingBarrier}`,
+        url: manual.session.page.url(),
+        created_at: nowIso(),
+      },
+    };
+  }
+
+  warnings.push("Manual handoff completed; capture resumed from the visible browser state.");
+  return { session: manual.session };
 }
 
 async function runAutomatedLogin(
@@ -682,34 +778,24 @@ async function runAutomatedLogin(
 
     const barrier = await detectBarrier(activeSession.page);
     if (barrier) {
-      await saveStep(
-        activeSession.page,
+      const handoff = await resolveGuardedState(
+        activeSession,
+        competitor,
+        credential,
         competitorDir,
         steps,
-        "manual-intervention-required",
-        `Encountered a guarded state containing "${barrier}" after automated sign-in.`,
-        "Shows where the flow stopped because manual intervention is required.",
+        warnings,
+        navigationHints,
+        headless,
+        resumeContext,
+        barrier,
+        "automated sign-in",
       );
-      warnings.push(`Encountered blocked verification or unsafe state: ${barrier}.`);
-      return {
-        session: activeSession,
-        capture: {
-          competitor_name: competitor.competitor_name,
-          status: "blocked",
-          summary: "Capture stopped because a verification or unsafe barrier appeared.",
-          steps,
-          analysis: emptyAnalysis(),
-          warnings,
-          ...(navigationHints.length > 0 ? { navigation_hints_used: navigationHints } : {}),
-          ...(resumeContext.resume_url ? { resume_url: resumeContext.resume_url } : {}),
-        },
-        checkpoint: {
-          competitor_name: competitor.competitor_name,
-          reason: `Blocked by guarded state: ${barrier}`,
-          url: activeSession.page.url(),
-          created_at: nowIso(),
-        },
-      };
+      activeSession = handoff.session;
+      if (handoff.capture) {
+        return handoff;
+      }
+      return { session: activeSession };
     }
 
     const credentialError = await detectCredentialError(activeSession.page);
@@ -835,33 +921,26 @@ async function captureWithPlaywright(
 
     const barrier = await detectBarrier(session.page);
     if (barrier) {
-      await saveStep(
-        session.page,
+      const handoff = await resolveGuardedState(
+        session,
+        competitor,
+        credential,
         competitorDir,
         steps,
-        "manual-intervention-required",
-        `Encountered a guarded state containing "${barrier}".`,
-        "Shows where the flow stopped because manual intervention is required.",
+        warnings,
+        navigationHints,
+        headless,
+        resumeContext,
+        barrier,
+        "post-login capture",
       );
-      warnings.push(`Encountered blocked verification or unsafe state: ${barrier}.`);
-      return {
-        capture: {
-          competitor_name: competitor.competitor_name,
-          status: "blocked",
-          summary: "Capture stopped because a verification or unsafe barrier appeared.",
-          steps,
-          analysis: emptyAnalysis(),
-          warnings,
-          ...(navigationHints.length > 0 ? { navigation_hints_used: navigationHints } : {}),
-          ...(resumeContext.resume_url ? { resume_url: resumeContext.resume_url } : {}),
-        },
-        checkpoint: {
-          competitor_name: competitor.competitor_name,
-          reason: `Blocked by guarded state: ${barrier}`,
-          url: session.page.url(),
-          created_at: nowIso(),
-        },
-      };
+      session = handoff.session;
+      if (handoff.capture) {
+        return {
+          capture: handoff.capture,
+          ...(handoff.checkpoint ? { checkpoint: handoff.checkpoint } : {}),
+        };
+      }
     }
 
     if (targetUrl && session.page.url() !== targetUrl) {
@@ -895,25 +974,30 @@ async function captureWithPlaywright(
 
     const secondBarrier = await detectBarrier(session.page);
     if (secondBarrier) {
-      warnings.push(`Encountered blocked verification or unsafe state: ${secondBarrier}.`);
-      return {
-        capture: {
-          competitor_name: competitor.competitor_name,
-          status: "partial",
-          summary: "Capture reached a guarded state after feature discovery.",
-          steps,
-          analysis: emptyAnalysis(),
-          warnings,
-          ...(navigationHints.length > 0 ? { navigation_hints_used: navigationHints } : {}),
-          ...(resumeContext.resume_url ? { resume_url: resumeContext.resume_url } : {}),
-        },
-        checkpoint: {
-          competitor_name: competitor.competitor_name,
-          reason: `Blocked after feature discovery by guarded state: ${secondBarrier}`,
-          url: session.page.url(),
-          created_at: nowIso(),
-        },
-      };
+      const handoff = await resolveGuardedState(
+        session,
+        competitor,
+        credential,
+        competitorDir,
+        steps,
+        warnings,
+        navigationHints,
+        headless,
+        resumeContext,
+        secondBarrier,
+        "feature discovery",
+      );
+      session = handoff.session;
+      if (handoff.capture) {
+        return {
+          capture: {
+            ...handoff.capture,
+            status: handoff.capture.status === "blocked" ? "partial" : handoff.capture.status,
+            summary: handoff.capture.summary || "Capture reached a guarded state after feature discovery.",
+          },
+          ...(handoff.checkpoint ? { checkpoint: handoff.checkpoint } : {}),
+        };
+      }
     }
 
     await saveStep(
@@ -973,7 +1057,8 @@ export async function captureDiscoveredCompetitors(
   const captures: CompetitorCapture[] = [];
   const warnings: string[] = [];
   const checkpoints: ManualInterventionCheckpoint[] = [];
-  const headless = request.headless ?? process.env.HEADLESS !== "false";
+  const hasCredentialInput = Boolean(resolveCredentialPath(request) ?? request.credentials);
+  const headless = request.headless ?? (process.env.HEADLESS ? process.env.HEADLESS !== "false" : !hasCredentialInput);
 
   for (const competitor of request.discovered_competitors) {
     const credential = findCredential(registry, competitor.competitor_name);
@@ -1014,6 +1099,12 @@ export async function captureDiscoveredCompetitors(
           screenshot_directory: competitorDir,
           auth_attempts_max: MAX_AUTH_ATTEMPTS,
           manual_login_required_after_two_attempts: true,
+          manual_intervention_policy: {
+            handoff_required_for: ["2FA", "OTP", "SMS verification", "email verification", "CAPTCHA", "bot checks"],
+            user_resolves_in_visible_browser: true,
+            resume_signal: "terminal_enter",
+            never_bypass: ["CAPTCHA", "OTP", "SMS", "email verification", "payment", "legal agreement"],
+          },
           credentials: browserAgentCredentials,
           navigation_hints: navigationHints,
           ...(resumeContext.resume_url ? { resume_url: resumeContext.resume_url } : {}),

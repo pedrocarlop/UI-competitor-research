@@ -159,7 +159,9 @@ Used only when:
 - The user has access credentials and wants to provide them
 - The login path is realistic and worth the effort
 
-The deliverable format is the same in both modes. Authenticated research adds logged-in evidence to the same markdown structure.
+Authenticated research is assisted, not login-first. Credentials can be supplied for a specific competitor through a credential registry, and the workflow will use them only for that competitor. If 2FA, CAPTCHA, SMS/email verification, suspicious-login checks, or similar barriers appear, the workflow opens or keeps a visible browser, tells the user what happened, waits while the user completes the challenge, then resumes capture after confirmation.
+
+The deliverable format is the same in both modes. Authenticated research adds logged-in evidence to the same markdown structure, and unresolved verification is recorded as a manual-intervention checkpoint rather than silently skipped.
 
 ---
 
@@ -360,4 +362,23 @@ Credentials are only relevant when:
 - Public evidence is genuinely insufficient
 - Access is realistic and worth the effort
 
-If authenticated research is requested, the skill follows the same safety rules: never fabricate credentials, stop on CAPTCHAs or verification barriers, and never perform destructive actions.
+If authenticated research is requested, the skill follows the same safety rules: never fabricate credentials, never persist real passwords in run artifacts, never bypass CAPTCHAs or verification barriers, and never perform destructive actions. Login inputs are masked in screenshots. When verification appears, it hands the browser to the user and resumes only after the user completes it.
+
+Credential registry example:
+
+```json
+{
+  "competitors": [
+    {
+      "competitor_name": "Stripe",
+      "login_url": "https://dashboard.stripe.com/login",
+      "email_env": "STRIPE_RESEARCH_EMAIL",
+      "password_env": "STRIPE_RESEARCH_PASSWORD",
+      "start_url": "https://dashboard.stripe.com/payment-links",
+      "navigation_hints": ["payment links"]
+    }
+  ]
+}
+```
+
+Run inputs can reference this file with `credential_registry_path` or `credentials_path`. Keep real credential files outside version control.

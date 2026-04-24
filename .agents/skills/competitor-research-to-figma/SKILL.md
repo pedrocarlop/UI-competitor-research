@@ -38,6 +38,7 @@ If the research question is missing, ask for it first. Do not proceed without it
 - `research_name` — short label used to name the run directory (defaults to a slug derived from `research_question`)
 - `output_path` — where to write the report (defaults to `./runs/<research-name>/<run-id>/output/`)
 - `figma_destination_url` — Figma file URL for optional visual export
+- `credential_registry_path` / `credentials_path` — optional credential registry for one or more specific competitors. Use only when the user explicitly requests authenticated research or provides credentials for a competitor.
 
 ## Run context isolation
 
@@ -119,6 +120,7 @@ Codex screenshot capture note:
 - Do not instruct Codex to use `mcp__Claude_in_Chrome__*` or `mcp__computer-use__screenshot`; those are Claude-oriented examples and do not guarantee saved files in Codex.
 - Prefer the current Browser Use CLI (`browser-use`, latest verified: 0.12.6) when the environment exposes it for interactive browser inspection. Configure `BROWSER_USE_COMMAND` if the binary is installed under a non-default command.
 - When Codex needs persistent screenshots, prefer the bundled Playwright-backed scripts in this repo (`npm run check:setup`, `npm run capture`, `npm run run:research`) so captured images are written to disk and can be verified.
+- When a credential registry is provided, use assisted authenticated capture for only the matching competitor(s). Run with a visible browser by default unless the user or environment explicitly requests headless mode. If 2FA, OTP, SMS/email verification, CAPTCHA, bot checks, or similar barriers appear, pause automation, tell the user what happened, let the user complete the challenge in the visible browser, then resume capture after the user confirms. Never bypass those barriers.
 
 #### Antigravity
 
@@ -126,6 +128,7 @@ Antigravity utilizes specialized native tools instead of generic thinking subage
 - Use the `search_web` tool concurrently for Market Context and Competitor Discovery.
 - Use the `read_url_content` tool concurrently for building the Source Map.
 - Use the current Browser Use browser automation tool when available. If Antigravity exposes `browser_subagent`, run it concurrently for specific Competitor Evidence, Pricing, and Sentiment. Configure the `Task` prompt to explicitly instruct the browser worker to extract the required JSON data payloads. Provide a descriptive `RecordingName` when the environment supports browser-session recordings.
+- If credentials are provided for a specific competitor, pass them only to that competitor's browser task. For 2FA, CAPTCHA, identity verification, or suspicious-login checks, hand control to the user in the browser, wait for the user to complete the challenge, then continue from the verified browser state. If the user cannot or does not complete the challenge, record a manual-intervention checkpoint and continue with public evidence.
 - Use the `write_to_file` tool with `IsArtifact: true` to output the final `research.md` (using carousels to embed WebP recordings and screenshots) directly to the user's workspace.
 
 ### Fallback behavior
@@ -282,6 +285,7 @@ For each competitor, also search for:
 Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one subagent per competitor concurrently. Each subagent handles evidence capture, pricing analysis, and sentiment gathering for its assigned competitor.
 
 - **Input:** `competitor_name`, `product_url`, `source_map` (from step 4), `research_question`, `subfeature_list` (from step 5), `locale` (optional), `output_assets_path`
+- **Optional authenticated input:** A matching credential entry for this specific competitor, when the user provided one. Do not pass credentials to unrelated competitors.
 - **Output:** A structured JSON bundle containing:
   - `screenshots[]` — array of `{"path": "...", "source_url": "...", "context_note": "..."}` saved to the active run directory's `output/assets/`
   - `pricing` — `{"pricing_model": "...", "tiers": [...], "cost_breakdowns": [...], "operational_fees": [...], "notable_strategies": [...], "enterprise_available": bool, "confidence": "..."}`
@@ -312,9 +316,10 @@ Steps 6, 7, and 8 are merged into a single subagent per competitor. Spawn one su
 - **Codex override:** When running this step in Codex, do not use the Claude-specific MCP instructions above as the primary screenshot path. Instead:
   - Prefer the bundled Playwright workflow in this repository when screenshots must persist to disk:
     - `npm run check:setup` to validate browser tooling
-    - `npm run capture -- --input <capture.json>` for targeted evidence capture
+    - `npm run capture -- --input <capture.json>` for targeted evidence capture, including assisted authenticated capture when `credential_registry_path` is present
     - `npm run run:research -- --input <research.json>` for end-to-end runs
   - Only report screenshot paths that were actually written and verified on disk.
+  - When credentials are provided, treat login as assisted, not fully autonomous: fill safe visible fields, submit at most two times, then hand off in a visible browser for 2FA/CAPTCHA/verification or unresolved login state. After the user resolves it and confirms, continue capturing non-destructive states.
   - If browser capture is unavailable, continue the research with public evidence and explicitly mark the screenshot as missing in the returned JSON rather than fabricating an asset path.
 
 ### 7. Analyze pricing models
@@ -634,7 +639,13 @@ Use only when ALL of the following are true:
 When using authenticated mode:
 - Never fabricate credentials
 - Never attempt account takeover
-- Stop on CAPTCHAs, OTP, SMS verification, email verification
+- Use credentials only for the competitor(s) the user explicitly supplied
+- Do not persist real passwords in run artifacts; redact credential payloads written to disk and prefer environment variables for secrets
+- Mask login inputs in screenshots captured during authenticated flows
+- Fill only ordinary login fields and submit at most two automated attempts before manual handoff
+- On CAPTCHAs, OTP, SMS verification, email verification, identity checks, or suspicious-login warnings, pause and hand control to the user in a visible browser
+- Resume capture only after the user completes the verification and explicitly confirms continuation
+- If the user cannot complete the challenge, record a manual-intervention checkpoint and continue with public evidence
 - Stop on payment steps, legal agreements, or destructive actions
 - Add authenticated evidence to the same markdown report structure
 
@@ -646,6 +657,7 @@ This skill must never:
 - Ask for credentials at the start of a research session
 - Treat login as the default research method
 - Bypass CAPTCHA, OTP, SMS, or email verification barriers
+- Solve account-verification challenges on behalf of the user
 - Execute destructive actions
 - Send money or complete payments
 - Sign legal agreements
